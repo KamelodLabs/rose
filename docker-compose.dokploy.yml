@@ -1,0 +1,45 @@
+# Dokploy deployment. Compose Path in Dokploy: ./docker-compose.dokploy.yml
+#
+# No host ports and no Traefik labels on purpose: Dokploy's Domains tab injects
+# the routing rules and TLS certificates per service/port, so nothing
+# environment-specific lives in git.
+#
+# No container_name: Dokploy uses generated names for logs, metrics and routing.
+
+services:
+  api:
+    build:
+      context: ./apiRose
+      dockerfile: Dockerfile
+    environment:
+      PORT: 8080
+    expose:
+      - '8080'
+    healthcheck:
+      test: ['CMD', 'wget', '-q', '-O', '-', 'http://127.0.0.1:8080/health']
+      interval: 10s
+      timeout: 3s
+      retries: 5
+      start_period: 5s
+    restart: unless-stopped
+    networks:
+      - dokploy-network
+
+  web:
+    build:
+      context: .
+      dockerfile: webRose/Dockerfile
+    environment:
+      PORT: 3000
+      HOSTNAME: 0.0.0.0
+      # When the web app calls the API server-side, use the internal network:
+      # API_URL=http://api:8080
+    expose:
+      - '3000'
+    restart: unless-stopped
+    networks:
+      - dokploy-network
+
+networks:
+  dokploy-network:
+    external: true
