@@ -1,7 +1,9 @@
 name: rose
 
-# Portable stack: same file on a laptop and on any VPS with Docker installed.
-# No cloud-specific primitives. Ports are overridable without editing the file.
+# Local development only. Dokploy uses docker-compose.dokploy.yml (no host ports,
+# routing handled by its integrated Traefik).
+# Portable stack: same images run on any Docker host. Ports are overridable
+# without editing the file.
 
 services:
   api:
