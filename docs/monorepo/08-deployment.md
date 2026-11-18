@@ -1,33 +1,40 @@
 # Deployment and portability
 
-Deployment is an artifact, not a platform. Both apps ship as OCI images with environment-based
-configuration, so the same files run on a laptop, on a VPS, or in any container host. Nothing in the
-code assumes a specific provider.
+Deployment is an artifact, not a platform. Both apps ship as OCI images driven by environment
+variables. The same images run locally with Compose and on a VPS through Dokploy; Dokploy adds
+orchestration and routing, it does not change the runtime.
 
-## Quick path
+## Quick path: local
 
 ```powershell
 docker compose up --build        # api :8080, web :3000
-docker compose ps                # api should report "healthy"
 docker compose down
 ```
 
-Requirements: Docker Engine or Docker Desktop running. No cloud account, no CLI login.
+## Quick path: VPS + Dokploy
 
-## Images
+1. Install Dokploy on a fresh VPS (its installer handles Docker and its own Traefik instance). Open
+   `80`, `443` and the panel port.
+2. Create a project and add a **Compose** service.
+3. Provider: GitHub. Repository: this repo. Branch: `main`.
+4. **Compose Path**: `./docker-compose.dokploy.yml`.
+5. Deploy, then open the **Domains** tab:
+   - `web` → service `web`, internal port `3000`, your domain. TLS is issued by Dokploy.
+   - `api` → optional subdomain on service `api`, port `8080`. Skip it while the API is internal.
+6. Environment variables are set in the Dokploy UI and referenced from Compose as `${VAR}`.
 
-| Image            | Build context | Dockerfile           | Runtime base     | User      |
-| ---------------- | ------------- | -------------------- | ---------------- | --------- |
-| `rose/api:local` | `apiRose/`    | `apiRose/Dockerfile` | `alpine:3.22`    | `appuser` |
-| `rose/web:local` | repo root     | `webRose/Dockerfile` | `node:24-alpine` | `node`    |
+Nothing else is needed: Dokploy's Traefik handles the reverse proxy and certificates.
 
-Why the web context is the repository root: pnpm workspaces resolve through the root
-`pnpm-lock.yaml` and `pnpm-workspace.yaml`. The image installs only the web filter, then copies the
-Next.js standalone output.
+## The two Compose files
 
-Why the standalone output is needed: `output: 'standalone'` in `next.config.ts` traces exactly the
-files the server needs. In this monorepo the entrypoint lands at `webRose/server.js` inside the
-standalone tree — that path is baked into the image command.
+| File                         | Used by           | Ports                        | Network           | Domains    |
+| ---------------------------- | ----------------- | ---------------------------- | ----------------- | ---------- |
+| `docker-compose.yml`         | Local development | Published to the host        | Default project   | No         |
+| `docker-compose.dokploy.yml` | Dokploy           | `expose` only, no host ports | `dokploy-network` | Dokploy UI |
+
+Publishing host ports on the VPS is explicitly not recommended by Dokploy: it conflicts with other
+apps and bypasses routing. Domains, TLS and labels live in Dokploy so nothing environment-specific
+ends up in git.
 
 ## Configuration
 
@@ -37,61 +44,75 @@ standalone tree — that path is baked into the image command.
 | web | `PORT`     | `3000`    | read by the standalone server  |
 | web | `HOSTNAME` | `0.0.0.0` | required to accept connections |
 
-Compose overrides the host ports without touching the file:
+Dokploy writes UI variables to a `.env` file but does not inject them blindly: reference each one in
+the Compose file (`environment: - FOO=${FOO}`). Secrets stay in Dokploy, never in git.
 
-```powershell
-$env:API_PORT=9000; $env:WEB_PORT=4000; docker compose up --build
+## Internal networking (when the web app calls the API)
+
+Both services share the project network, so server-side calls use the service name:
+
+```ts
+const apiUrl = process.env.API_URL ?? 'http://api:8080';
 ```
 
-## Moving to a VPS
+This keeps the API private and avoids CORS entirely. If the browser must call the API directly, give
+the API a subdomain in Dokploy and add CORS in the Go service — that is a product decision, not a
+deployment requirement.
 
-The migration is a copy of the repo plus Docker:
+## Auto deploy
 
-```bash
-git clone <repo> && cd rose
-docker compose up -d --build
-```
+Dokploy's GitHub provider enables auto deploy without manual webhooks. Set the branch per environment
+(e.g. `main` for production). If a push does not trigger a deploy, the usual cause is "Branch Not
+Match": the branch configured in Dokploy differs from the pushed one.
 
-That is the entire procedure. There is no build step outside Docker, no platform config file, and no
-provider CLI involved. Add a reverse proxy (Caddy or Traefik) for TLS when you expose it; that proxy is
-independent of these images.
-
-## What this deliberately avoids
-
-| Avoided                       | Reason                                                           |
-| ----------------------------- | ---------------------------------------------------------------- |
-| Vercel hosting                | Second build pipeline, provider-specific runtime, ToS on Hobby   |
-| Turborepo hosted remote cache | Ties caching to Vercel; GitHub cache already covers current size |
-| EAS Update                    | Runtime updates coupled to Expo's service; not needed to ship    |
-| Managed databases             | Nothing to manage yet; keep the choice open                      |
-| Registry push                 | No destination yet; images build from source anywhere            |
-
-When a destination exists, publishing to GHCR is additive: `docker/build-push-action` with
-`push: true`. It does not change the Dockerfiles.
-
-## CI for images
-
-`.github/workflows/images.yml` builds both images on every PR that touches app or Docker files, with
-`cache-from/to: type=gha`. It does **not** push and is **not** a required check: it reports breakage
-without slowing merges.
+Preview deployments (one environment per pull request) exist for **Applications**, not for Compose
+services. If they become necessary, split `web` into an Application — it still uses the same
+Dockerfile and context.
 
 ## Rollback
 
-Images are tagged by what built them. On a VPS, rebuild the previous commit and restart:
+Dokploy keeps deployment history: redeploy the previous commit from the UI. Without Dokploy:
 
 ```bash
 git checkout <previous-commit>
-docker compose up -d --build
+docker compose -f docker-compose.dokploy.yml up -d --build
 ```
 
-Once you publish images, tag them with the commit SHA and roll back by tag instead.
+## CI for images
+
+`.github/workflows/images.yml` builds both images on PRs touching app or Docker files, with
+`cache-from/to: type=gha`. It does not push and is not a required check: it reports breakage without
+blocking merges. Dokploy builds from source on deploy, so a registry is optional.
+
+## What is deliberately avoided
+
+| Avoided                       | Reason                                                           |
+| ----------------------------- | ---------------------------------------------------------------- |
+| Vercel hosting                | Second build pipeline, provider runtime, Hobby ToS               |
+| Hosted Turborepo remote cache | Couples caching to Vercel; GitHub cache covers current size      |
+| EAS Update                    | Runtime updates coupled to Expo's service                        |
+| Managed databases             | Nothing to manage yet; the choice stays open                     |
+| Registry push                 | Dokploy builds from source; add GHCR only when there is a reason |
+
+## Troubleshooting
+
+| Symptom                              | Likely cause                                                                  |
+| ------------------------------------ | ----------------------------------------------------------------------------- |
+| Domain never resolves / 404          | Broken healthcheck, wrong service name, or wrong internal port                |
+| Deploy did not trigger               | Branch mismatch between Dokploy and the pushed branch                         |
+| 502 after deploy                     | Container unhealthy or the domain points to a port the app does not listen on |
+| Service unreachable from another app | Service not attached to the expected network                                  |
+
+VPS sizing: Next.js production builds are memory-hungry. 4 GB is workable for this repo; 8 GB leaves
+comfortable headroom for builds and containers.
 
 ## Checklist
 
-- [ ] `docker compose config -q` parses without warnings.
-- [ ] `docker compose up --build` serves `/health` on the API and the app on the web port.
-- [ ] No secret is baked into an image; everything sensitive arrives as an environment variable.
-- [ ] A new deploy target requires zero changes outside `docker-compose.yml`.
+- [ ] `docker compose config -q` and `docker compose -f docker-compose.dokploy.yml config -q` parse.
+- [ ] Local stack serves the web app and `/health` without Dokploy.
+- [ ] Dokploy Compose path points to `docker-compose.dokploy.yml`.
+- [ ] Domains are configured in Dokploy, not hardcoded in the repo.
+- [ ] No secret is baked into an image.
 
 ## Next step
 
