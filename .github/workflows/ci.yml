@@ -1,0 +1,82 @@
+name: CI
+
+on:
+  pull_request:
+    branches: [dev, staging, main]
+  push:
+    branches: [dev, staging, main]
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+env:
+  TURBO_TELEMETRY_DISABLED: '1'
+
+jobs:
+  js:
+    name: js
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v6
+
+      # Reads the pnpm version from package.json#packageManager and caches the store.
+      - uses: pnpm/action-setup@v6
+        with:
+          cache: true
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version: '24'
+
+      # Turbo validates every cache entry against its inputs, so a stale hit is only a miss.
+      - name: Restore Turborepo cache
+        uses: actions/cache@v4
+        with:
+          path: .turbo/cache
+          key: turbo-${{ runner.os }}-${{ github.sha }}
+          restore-keys: |
+            turbo-${{ runner.os }}-
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Check formatting
+        run: pnpm exec prettier --check .
+
+      # apiRose is excluded here: its lint/check-types scripts run go vet (go job owns that).
+      - name: Lint and type check
+        run: pnpm exec turbo run lint check-types --filter=@rose/webRose --filter=@rose/mobileRose
+
+      - name: Build web
+        run: pnpm exec turbo run build --filter=@rose/webRose
+
+  go:
+    name: go
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    defaults:
+      run:
+        working-directory: apiRose
+    steps:
+      - uses: actions/checkout@v6
+
+      # Caching is disabled until apiRose gains dependencies and produces a go.sum.
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: apiRose/go.mod
+          cache: false
+
+      - name: Vet
+        run: go vet ./...
+
+      - name: Test
+        run: go test ./...
+
+      - name: Build
+        run: go build ./...
