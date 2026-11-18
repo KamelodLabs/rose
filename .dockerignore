@@ -1,0 +1,23 @@
+.git
+.github
+.atl
+docs
+node_modules
+**/node_modules
+**/.next
+**/.turbo
+**/.expo
+**/dist
+**/bin
+**/*.exe
+**/*.tsbuildinfo
+
+# The mobile app is not part of the web image; only its manifest is needed for the
+# frozen workspace install. Exclude heavy folders instead of the whole directory so
+# that negation edge cases never break the install.
+mobileRose/src
+mobileRose/assets
+mobileRose/scripts
+mobileRose/.vscode
+mobileRose/ios
+mobileRose/android
