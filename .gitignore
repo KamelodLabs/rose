@@ -1,0 +1,17 @@
+node_modules/
+.turbo/
+.next/
+out/
+dist/
+bin/
+*.exe
+.expo/
+.env
+.env.*
+!.env.example
+pnpm-debug.log*
+*.tsbuildinfo
+.atl/.skill-registry.cache.json
+.DS_Store
+webRose/.next/
+mobileRose/.expo/

@@ -1,0 +1,11 @@
+{
+  "name": "@rose/apiRose",
+  "private": true,
+  "scripts": {
+    "dev": "go run ./cmd/server",
+    "build": "go build -o bin/server.exe ./cmd/server",
+    "lint": "go vet ./...",
+    "check-types": "go vet ./...",
+    "test": "go test ./..."
+  }
+}

@@ -1,0 +1,10 @@
+node_modules
+.next
+.turbo
+dist
+bin
+pnpm-lock.yaml
+*.exe
+next-env.d.ts
+expo-env.d.ts
+.atl

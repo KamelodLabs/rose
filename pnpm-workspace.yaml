@@ -1,0 +1,9 @@
+packages:
+  - 'apiRose'
+  - 'webRose'
+  - 'mobileRose'
+  - 'packages/*'
+nodeLinker: hoisted
+ignoredBuiltDependencies:
+  - sharp
+  - unrs-resolver
