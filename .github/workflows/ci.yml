@@ -1,10 +1,12 @@
 name: CI
 
 on:
+  # Post-merge runs on dev/staging would duplicate the PR run against an identical
+  # tree; keep the push run only on main as the release gate.
   pull_request:
     branches: [dev, staging, main]
   push:
-    branches: [dev, staging, main]
+    branches: [main]
   workflow_dispatch:
 
 concurrency:
