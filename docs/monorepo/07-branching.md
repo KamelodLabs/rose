@@ -87,18 +87,19 @@ first push. GitHub documents the relevant rules as **required pull requests**, *
 **block force pushes**, **restrict deletions**, and optional **required deployments** per environment;
 GitLab exposes the same idea as **protected branches** with separate push/merge access levels.
 
-| Setting                         | `dev`                | `staging`            | `main`               |
-| ------------------------------- | -------------------- | -------------------- | -------------------- |
-| Allow direct pushes             | No                   | No                   | No                   |
-| Require pull/merge request      | Yes                  | Yes                  | Yes                  |
-| Required approvals                        | 0 (solo)     | 0 (solo)         | 0 (solo)         |
-| Required status checks          | lint + types + build | lint + types + build | lint + types + build |
-| Block force push                | Yes                  | Yes                  | Yes                  |
-| Restrict deletions              | Yes                  | Yes                  | Yes                  |
-| Required deployment environment | No                   | `staging`            | `production`         |
-| Linear history                  | Optional             | Optional             | Optional             |
+| Setting                         | `dev`      | `staging`  | `main`       |
+| ------------------------------- | ---------- | ---------- | ------------ |
+| Allow direct pushes             | No         | No         | No           |
+| Require pull/merge request      | Yes        | Yes        | Yes          |
+| Required approvals              | 0 (solo)   | 0 (solo)   | 0 (solo)     |
+| Required status checks          | `js`, `go` | `js`, `go` | `js`, `go`   |
+| Block force push                | Yes        | Yes        | Yes          |
+| Restrict deletions              | Yes        | Yes        | Yes          |
+| Required deployment environment | No         | `staging`  | `production` |
+| Linear history                  | Optional   | Optional   | Optional     |
 
-Required checks map to the root scripts: `pnpm lint`, `pnpm check-types`, `pnpm build`.
+Required checks are the two CI jobs from `.github/workflows/ci.yml`: `js` (format, lint, types, web
+build) and `go` (vet, test, build).
 
 Two practical notes:
 
