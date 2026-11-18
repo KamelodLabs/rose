@@ -91,7 +91,7 @@ GitLab exposes the same idea as **protected branches** with separate push/merge 
 | ------------------------------- | -------------------- | -------------------- | -------------------- |
 | Allow direct pushes             | No                   | No                   | No                   |
 | Require pull/merge request      | Yes                  | Yes                  | Yes                  |
-| Required approvals              | 1                    | 1                    | 1                    |
+| Required approvals                        | 0 (solo)     | 0 (solo)         | 0 (solo)         |
 | Required status checks          | lint + types + build | lint + types + build | lint + types + build |
 | Block force push                | Yes                  | Yes                  | Yes                  |
 | Restrict deletions              | Yes                  | Yes                  | Yes                  |
@@ -99,6 +99,14 @@ GitLab exposes the same idea as **protected branches** with separate push/merge 
 | Linear history                  | Optional             | Optional             | Optional             |
 
 Required checks map to the root scripts: `pnpm lint`, `pnpm check-types`, `pnpm build`.
+
+Two practical notes:
+
+- **Solo maintainer:** GitHub does not let you approve your own pull request. Requiring 1 approval on a
+  one-person repo blocks every merge. Keep approvals at 0 until there is a second reviewer.
+- **Plan limits:** branch protection and rulesets are available on public repositories for free. Private
+  repositories need a paid plan. If protection is unavailable, the model still works by convention; do
+  not pretend it is enforced.
 
 ## Checklist
 
