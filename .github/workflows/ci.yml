@@ -23,7 +23,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
 
       # Reads the pnpm version from package.json#packageManager and caches the store.
       - uses: pnpm/action-setup@v6
@@ -36,7 +36,7 @@ jobs:
 
       # Turbo validates every cache entry against its inputs, so a stale hit is only a miss.
       - name: Restore Turborepo cache
-        uses: actions/cache@v4
+        uses: actions/cache@v6
         with:
           path: .turbo/cache
           key: turbo-${{ runner.os }}-${{ github.sha }}
@@ -64,10 +64,10 @@ jobs:
       run:
         working-directory: apiRose
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
 
       # Caching is disabled until apiRose gains dependencies and produces a go.sum.
-      - uses: actions/setup-go@v5
+      - uses: actions/setup-go@v7
         with:
           go-version-file: apiRose/go.mod
           cache: false
