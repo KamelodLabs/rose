@@ -1,0 +1,34 @@
+name: rose
+
+# Portable stack: same file on a laptop and on any VPS with Docker installed.
+# No cloud-specific primitives. Ports are overridable without editing the file.
+
+services:
+  api:
+    build:
+      context: ./apiRose
+      dockerfile: Dockerfile
+    image: rose/api:local
+    environment:
+      PORT: 8080
+    ports:
+      - '${API_PORT:-8080}:8080'
+    healthcheck:
+      test: ['CMD', 'wget', '-q', '-O', '-', 'http://127.0.0.1:8080/health']
+      interval: 10s
+      timeout: 3s
+      retries: 5
+      start_period: 5s
+    restart: unless-stopped
+
+  web:
+    build:
+      context: .
+      dockerfile: webRose/Dockerfile
+    image: rose/web:local
+    environment:
+      PORT: 3000
+      HOSTNAME: 0.0.0.0
+    ports:
+      - '${WEB_PORT:-3000}:3000'
+    restart: unless-stopped

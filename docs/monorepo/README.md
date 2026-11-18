@@ -30,6 +30,7 @@ workspace is wired and how to use it end to end without guessing.
 | [05-mobile.md](./05-mobile.md)                   | Work on the Expo mobile app                          |
 | [06-troubleshooting.md](./06-troubleshooting.md) | Fix a broken install, port, cache, or resolve error  |
 | [07-branching.md](./07-branching.md)             | Understand `dev` -> `staging` -> `main` and releases |
+| [08-deployment.md](./08-deployment.md)           | Run the stack as containers and move it to any host  |
 
 ## Ground rules
 
