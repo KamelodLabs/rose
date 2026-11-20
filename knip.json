@@ -1,0 +1,24 @@
+{
+  "$schema": "https://unpkg.com/knip@6/schema.json",
+  "workspaces": {
+    "@rose/webRose": {
+      "entry": [
+        "src/app/**/*.{ts,tsx}",
+        "src/**/*.test.{ts,tsx}",
+        "next.config.ts",
+        "vitest.config.mts"
+      ]
+    },
+    "@rose/mobileRose": {
+      "entry": [
+        "src/app/**/*.{ts,tsx}",
+        "src/**/*.test.{ts,tsx}",
+        "scripts/reset-project.js",
+        "test/style-mock.js"
+      ]
+    },
+    "@rose/apiRose": {
+      "entry": []
+    }
+  }
+}
