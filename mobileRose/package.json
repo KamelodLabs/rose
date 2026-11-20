@@ -33,11 +33,15 @@
     "eslint-config-expo": "~58.0.4",
     "jest": "~30.5.2",
     "jest-expo": "~58.0.15",
+    "qrcode": "^1.5.4",
     "typescript": "~6.0.3"
   },
   "scripts": {
-    "dev": "expo start",
-    "start": "expo start",
+    "dev": "node scripts/start-expo.mjs",
+    "start": "node scripts/start-expo.mjs",
+    "start:plain": "expo start",
+    "start:localhost": "node scripts/start-expo.mjs --localhost",
+    "start:tunnel": "expo start --go --tunnel",
     "reset-project": "node ./scripts/reset-project.js",
     "android": "expo start --android",
     "ios": "expo start --ios",
