@@ -7,12 +7,12 @@ workspace is wired and how to use it end to end without guessing.
 
 1. `pnpm install` from the repo root (never inside a project). It also runs `prepare`, which installs
    the Husky Git hooks; `.npmrc` sets `engine-strict=true`, so a wrong Node version fails the install.
-2. `pnpm dev` to start the web app and the API in parallel.
-3. Mobile is separate: `pnpm --filter @rose/mobileRose start` (Expo dev server on port 8081).
-4. `pnpm test` runs Vitest (web), Jest (mobile), and `go test` (API).
-5. `pnpm quality` runs the duplication and unused-code gates.
-6. Verify: API `http://localhost:8080/health`, web `http://localhost:3000`, Expo on
-   `http://localhost:8081` (after step 3).
+2. `pnpm dev` to start the web app, the API, and the mobile app (Expo on port 8081) in parallel.
+3. `pnpm test` runs Vitest (web), Jest (mobile), and `go test` (API).
+4. `pnpm quality` runs the duplication and unused-code gates.
+5. Verify: API `http://localhost:8080/health`, web `http://localhost:3000`, Expo on
+   `http://localhost:8081`.
+6. Mobile only (without the rest of the stack): `pnpm --filter @rose/mobileRose start`.
 
 ## What is inside
 

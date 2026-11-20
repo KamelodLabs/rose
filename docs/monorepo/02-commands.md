@@ -8,7 +8,7 @@ narrow the work to one project. Use this page as the command reference.
 
 ```powershell
 pnpm install      # once; `prepare` installs the Husky hooks
-pnpm dev          # web + API in parallel
+pnpm dev          # web + API + mobile (Expo) in parallel
 pnpm test         # Vitest (web) + Jest (mobile) + go test (api)
 pnpm quality      # jscpd duplication + knip unused-code gates
 pnpm check-types  # TypeScript + go vet
@@ -16,10 +16,8 @@ pnpm lint         # eslint + expo lint + go vet
 pnpm build        # web + api (mobile is built by EAS)
 ```
 
-`pnpm dev` does not start mobile: `mobileRose` has no `dev` script. Start it separately with
+Stop `pnpm dev` with `Ctrl+C`; Turbo terminates all child tasks. To run mobile alone, use
 `pnpm --filter @rose/mobileRose start` (Expo on port 8081).
-
-Stop `pnpm dev` with `Ctrl+C`; Turbo terminates all child tasks.
 
 ## Root scripts
 
@@ -28,7 +26,7 @@ the root.
 
 | Script                     | What it does                                             | Scope     |
 | -------------------------- | -------------------------------------------------------- | --------- |
-| `pnpm dev`                 | Persistent dev servers, no cache                         | web + api |
+| `pnpm dev`                 | Persistent dev servers, no cache                         | all       |
 | `pnpm build`               | Production builds                                        | web + api |
 | `pnpm lint`                | `eslint`, `expo lint`, `go vet`                          | all       |
 | `pnpm check-types`         | `next typegen && tsc --noEmit`, `tsc --noEmit`, `go vet` | all       |
@@ -121,9 +119,8 @@ Rules that prevent pain:
 | mobile | `mobileRose/.env.local` | `EXPO_PUBLIC_`          |
 | api    | process env / shell     | plain env (`PORT`)      |
 
-Env files are gitignored. The root `.env.example` is unignored; `webRose/.env.example` is still ignored
-by `webRose/.gitignore`, so add a negation rule there if you want to commit one
-(`mobileRose/.env.example` is not currently ignored).
+Env files are gitignored. A `.env.example` is allowed at the repo root, in `webRose`, and in
+`mobileRose`; commit one when you need to share the variable list.
 
 ## Git hooks
 
@@ -152,7 +149,7 @@ Allowed types: `feat`, `fix`, `docs`, `style`, `refactor`, `perf`, `test`, `buil
 
 - [ ] You always run `pnpm install` from the root.
 - [ ] You use `expo install` for Expo native packages.
-- [ ] You know mobile is not part of `pnpm dev`.
+- [ ] You know `pnpm dev` starts web, API, and mobile.
 - [ ] You know how to force a rebuild when the cache lies.
 
 ## Next step
