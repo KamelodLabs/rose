@@ -7,6 +7,13 @@
   },
   "scripts": {
     "dev": "turbo run dev",
+    "dev:start": "node docs/scripts/dev.mjs start",
+    "dev:status": "node docs/scripts/dev.mjs status",
+    "dev:stop": "node docs/scripts/dev.mjs stop",
+    "dev:logs": "node docs/scripts/dev.mjs logs",
+    "doctor:repo": "node docs/scripts/doctor.mjs",
+    "clean": "node docs/scripts/clean.mjs",
+    "promote": "node docs/scripts/promote.mjs",
     "build": "turbo run build",
     "lint": "turbo run lint",
     "check-types": "turbo run check-types",
@@ -16,7 +23,8 @@
     "prepare": "husky",
     "quality": "pnpm quality:duplication && pnpm quality:unused",
     "quality:duplication": "jscpd . --config .jscpd.json",
-    "quality:unused": "knip --include files,dependencies --max-issues 0 --no-config-hints"
+    "quality:unused": "knip --include files,dependencies --max-issues 0 --no-config-hints",
+    "verify": "pnpm format:check && pnpm lint && pnpm check-types && pnpm test && pnpm quality && pnpm build"
   },
   "lint-staged": {
     "*.{ts,tsx,js,jsx,mjs,cjs,json,jsonc,md,mdx,yml,yaml,css}": "prettier --write"
