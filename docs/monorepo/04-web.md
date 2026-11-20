@@ -1,12 +1,13 @@
 # Web app (`webRose`)
 
 Next.js 16 with the App Router, React 19, and Tailwind 4 (wired through Turbopack). Runs on port 3000
-and builds to a static/optimized output with route types generated from the filesystem.
+and builds to a standalone server bundle (`output: 'standalone'`) that the Docker image runs.
 
 ## Quick path
 
 ```powershell
 pnpm --filter @rose/webRose dev      # http://localhost:3000
+pnpm --filter @rose/webRose test     # Vitest + jsdom
 pnpm exec turbo run build --filter=@rose/webRose
 ```
 
@@ -19,31 +20,49 @@ pnpm exec turbo run build --filter=@rose/webRose
 | Tailwind | 4.3.3   | Loaded by `@tailwindcss/turbopack` in `next.config.ts`     |
 | TS       | ^5      | `next typegen` generates route types before `tsc --noEmit` |
 | ESLint   | ^9      | `eslint-config-next` flat config                           |
+| Vitest   | 5.1.1   | jsdom + Testing Library                                    |
 
 ## Layout
 
-| Path                  | Responsibility                                 |
-| --------------------- | ---------------------------------------------- |
-| `src/app/layout.tsx`  | root layout                                    |
-| `src/app/page.tsx`    | `/` route                                      |
-| `src/app/globals.css` | Tailwind entrypoint                            |
-| `src/app/**`          | every folder/file becomes a route              |
-| `public/`             | static assets                                  |
-| `next.config.ts`      | cache components, prefetching, Tailwind loader |
-| `tsconfig.json`       | extends `../tsconfig.base.json`                |
+| Path                  | Responsibility                                                                                                    |
+| --------------------- | ----------------------------------------------------------------------------------------------------------------- |
+| `src/app/layout.tsx`  | root layout                                                                                                       |
+| `src/app/page.tsx`    | `/` route                                                                                                         |
+| `src/app/globals.css` | Tailwind entrypoint                                                                                               |
+| `src/app/**`          | `page.tsx` and `route.ts` create routes; `layout.tsx` wraps them. `globals.css` and static assets are not routes. |
+| `src/__tests__/`      | Vitest tests                                                                                                      |
+| `public/`             | static assets                                                                                                     |
+| `next.config.ts`      | standalone output, cache components, Tailwind                                                                     |
+| `vitest.config.mts`   | jsdom, `@` alias, test include                                                                                    |
+| `tsconfig.json`       | extends `../tsconfig.base.json`                                                                                   |
 
 Alias: `@/*` resolves to `webRose/src/*`.
 
 ## Commands
 
-| Task        | Command                                             |
-| ----------- | --------------------------------------------------- |
-| Dev         | `pnpm --filter @rose/webRose dev`                   |
-| Build       | `pnpm exec turbo run build --filter=@rose/webRose`  |
-| Start prod  | `pnpm --filter @rose/webRose start` (after a build) |
-| Lint        | `pnpm --filter @rose/webRose lint`                  |
-| Type check  | `pnpm --filter @rose/webRose check-types`           |
-| Custom port | `pnpm --filter @rose/webRose exec next dev -p 3001` |
+| Task        | Command                                                                                                                                                                                                                                              |
+| ----------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Dev         | `pnpm --filter @rose/webRose dev`                                                                                                                                                                                                                    |
+| Build       | `pnpm exec turbo run build --filter=@rose/webRose`                                                                                                                                                                                                   |
+| Start prod  | Run the Docker image, or from `webRose/` after a build copy `.next/static` to `.next/standalone/webRose/.next/static` and `public` to `.next/standalone/webRose/public` (as the Dockerfile does), then run `node .next/standalone/webRose/server.js` |
+| Lint        | `pnpm --filter @rose/webRose lint`                                                                                                                                                                                                                   |
+| Type check  | `pnpm --filter @rose/webRose check-types`                                                                                                                                                                                                            |
+| Test        | `pnpm --filter @rose/webRose test`                                                                                                                                                                                                                   |
+| Test watch  | `pnpm --filter @rose/webRose test:watch`                                                                                                                                                                                                             |
+| Custom port | `pnpm --filter @rose/webRose exec next dev -p 3001`                                                                                                                                                                                                  |
+
+## Testing
+
+Vitest + jsdom + Testing Library. `vitest.config.mts` sets `environment: 'jsdom'`, maps the `@` alias
+to `src`, and includes `src/**/*.test.{ts,tsx}`.
+
+`src/__tests__/home.test.tsx` is the starter test. It mocks `next/image` with a plain `<img>` because
+there is no Next image optimizer under jsdom; keep that stub in tests that render images.
+
+| Task     | Command                                  |
+| -------- | ---------------------------------------- |
+| Run once | `pnpm --filter @rose/webRose test`       |
+| Watch    | `pnpm --filter @rose/webRose test:watch` |
 
 ## Add a route
 
@@ -72,6 +91,7 @@ It is served at `/dashboard`. Add `layout.tsx` in the same folder to scope a lay
 ## Checklist
 
 - [ ] `pnpm --filter @rose/webRose check-types` passes (it runs `next typegen` first).
+- [ ] `pnpm --filter @rose/webRose test` passes.
 - [ ] `pnpm exec turbo run build --filter=@rose/webRose` succeeds.
 - [ ] New client components have `'use client'` at the top.
 

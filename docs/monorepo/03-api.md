@@ -14,13 +14,14 @@ Expected: `{"status":"ok"}`.
 
 ## Layout
 
-| Path                        | Responsibility                                    |
-| --------------------------- | ------------------------------------------------- |
-| `go.mod`                    | module `rose/apiRose`, Go 1.26                    |
-| `cmd/server/main.go`        | config, mux wiring, middleware, graceful shutdown |
-| `internal/health/health.go` | `/health` handler                                 |
-| `internal/<domain>/`        | each new domain gets its own package              |
-| `bin/server.exe`            | build output (gitignored)                         |
+| Path                             | Responsibility                                    |
+| -------------------------------- | ------------------------------------------------- |
+| `go.mod`                         | module `rose/apiRose`, Go 1.26                    |
+| `cmd/server/main.go`             | config, mux wiring, middleware, graceful shutdown |
+| `internal/health/health.go`      | `/health` handler                                 |
+| `internal/health/health_test.go` | table-driven tests for `/health`                  |
+| `internal/<domain>/`             | each new domain gets its own package              |
+| `bin/server.exe`                 | build output (gitignored)                         |
 
 ## Behavior
 
@@ -41,11 +42,21 @@ Expected: `{"status":"ok"}`.
 | Dev (direct)   | `go run ./cmd/server` from `apiRose/`              |
 | Build          | `pnpm --filter @rose/apiRose build`                |
 | Test           | `pnpm --filter @rose/apiRose test`                 |
-| Vet / lint     | `pnpm --filter @rose/apiRose lint`                 |
+| Vet            | `pnpm --filter @rose/apiRose lint`                 |
+| Complexity     | `pnpm --filter @rose/apiRose lint:complexity`      |
 | Add a module   | `go get <module>` then `go mod tidy` in `apiRose/` |
 
 `build` writes `bin/server.exe` because this repo is Windows-first. On Linux/macOS change the script in
 `apiRose/package.json` to `go build -o bin/server ./cmd/server`.
+
+## Tests and complexity
+
+`pnpm --filter @rose/apiRose test` runs `go test ./...`. CI runs `go test -race ./...` instead: the
+race detector needs cgo, and the Ubuntu runner ships a C toolchain. On Windows, use the plain
+`go test ./...` unless you install a gcc-compatible toolchain and enable cgo.
+
+`pnpm --filter @rose/apiRose lint:complexity` runs gocyclo v0.6.0 with `-over 10 -ignore _test.go`.
+Any function above a cyclomatic complexity of 10 fails the gate; split it into named helpers.
 
 ## Add an endpoint
 
@@ -73,7 +84,7 @@ func Handler() http.HandlerFunc {
 mux.Handle("GET /greeting", greeting.Handler())
 ```
 
-3. Run `pnpm --filter @rose/apiRose check-types` (it runs `go vet`) and `test`.
+3. Run `pnpm --filter @rose/apiRose check-types`, `test`, and `lint:complexity`.
 
 ## Conventions
 
@@ -86,6 +97,8 @@ mux.Handle("GET /greeting", greeting.Handler())
 ## Checklist
 
 - [ ] `go vet ./...` passes from `apiRose/`.
+- [ ] `pnpm --filter @rose/apiRose lint:complexity` reports no function above 10.
+- [ ] `go test -race ./...` passes in CI (and locally when cgo is available).
 - [ ] `GET /health` returns `{"status":"ok"}`.
 - [ ] New routes are registered with a method prefix (`GET /path`).
 

@@ -1,8 +1,9 @@
 # Deployment and portability
 
 Deployment is an artifact, not a platform. Both apps ship as OCI images driven by environment
-variables. The same images run locally with Compose and on a VPS through Dokploy; Dokploy adds
-orchestration and routing, it does not change the runtime.
+variables. The same Dockerfiles are used locally with Compose and on a VPS through Dokploy; Dokploy
+rebuilds from source rather than pulling the local images. Dokploy adds orchestration and routing, it
+does not change the runtime.
 
 ## Quick path: local
 
@@ -35,6 +36,22 @@ Nothing else is needed: Dokploy's Traefik handles the reverse proxy and certific
 Publishing host ports on the VPS is explicitly not recommended by Dokploy: it conflicts with other
 apps and bypasses routing. Domains, TLS and labels live in Dokploy so nothing environment-specific
 ends up in git.
+
+## Web image build
+
+`webRose/Dockerfile` builds from the repo root because the workspace and lockfile live there.
+
+1. **base** installs pnpm 10.33.4 and sets `ENV HUSKY=0`. `.dockerignore` excludes `.git`, so the root
+   `prepare` -> `husky` hook has no repository to install into; skipping it is required.
+2. **deps** copies the root manifests (`package.json`, `pnpm-lock.yaml`, `pnpm-workspace.yaml`) plus
+   `apiRose/package.json`, `webRose/package.json`, and `mobileRose/package.json`, then runs a frozen
+   filtered install. Every workspace manifest must exist for the lockfile to validate: keep this list
+   in sync when you add an app.
+3. **builder** copies the repo and runs `pnpm --filter @rose/webRose build`.
+4. **runner** copies `.next/standalone`, `.next/static`, and `public`, then starts `webRose/server.js`.
+
+`.dockerignore` excludes `.git`, `.atl`, `.github`, `docs`, `node_modules`, build outputs, and most of
+`mobileRose`; only its `package.json` is needed for the workspace install.
 
 ## Configuration
 
@@ -71,18 +88,33 @@ Dockerfile and context.
 
 ## Rollback
 
-Dokploy keeps deployment history: redeploy the previous commit from the UI. Without Dokploy:
+Dokploy keeps deployment history: redeploy the previous commit from the UI. Without Dokploy, use the
+local Compose file:
 
 ```bash
 git checkout <previous-commit>
-docker compose -f docker-compose.dokploy.yml up -d --build
+docker compose up -d --build
 ```
+
+`docker-compose.dokploy.yml` declares `dokploy-network` as `external: true`, so it fails outside
+Dokploy. To use it anyway, create the network first (`docker network create dokploy-network`) or remove
+the `external: true` flag.
 
 ## CI for images
 
-`.github/workflows/images.yml` builds both images on PRs touching app or Docker files, with
-`cache-from/to: type=gha`. It does not push and is not a required check: it reports breakage without
-blocking merges. Dokploy builds from source on deploy, so a registry is optional.
+`.github/workflows/images.yml` builds both images with `cache-from/to: type=gha`. It runs on pull
+requests that touch:
+
+- `.dockerignore`
+- `.github/workflows/images.yml`
+- `apiRose/**`
+- `docker-compose.yml` and `docker-compose.dokploy.yml`
+- root `package.json`, `pnpm-lock.yaml`, `pnpm-workspace.yaml`
+- `webRose/**`
+
+It also supports manual `workflow_dispatch`. It does not run on every PR, does not push, and is not a
+required check: it reports breakage without blocking merges. Dokploy builds from source on deploy, so a
+registry is optional.
 
 ## What is deliberately avoided
 
@@ -102,6 +134,7 @@ blocking merges. Dokploy builds from source on deploy, so a registry is optional
 | Deploy did not trigger               | Branch mismatch between Dokploy and the pushed branch                         |
 | 502 after deploy                     | Container unhealthy or the domain points to a port the app does not listen on |
 | Service unreachable from another app | Service not attached to the expected network                                  |
+| Image build fails at `pnpm install`  | A workspace manifest is missing from the `deps` stage                         |
 
 VPS sizing: Next.js production builds are memory-hungry. 4 GB is workable for this repo; 8 GB leaves
 comfortable headroom for builds and containers.
