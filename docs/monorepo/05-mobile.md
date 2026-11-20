@@ -6,14 +6,17 @@ or emulator; ship builds through EAS, not through Turborepo.
 ## Quick path
 
 ```powershell
-pnpm --filter @rose/mobileRose start      # agent-friendly Expo Go URL + QR/metadata files
-pnpm --filter @rose/mobileRose test       # Jest + React Native Testing Library
-pnpm --filter @rose/mobileRose android    # Android emulator or device
-pnpm --filter @rose/mobileRose web        # runs the app in the browser
+pnpm --filter @rose/mobileRose start            # agent-friendly Expo Go URL + QR/metadata files
+pnpm --filter @rose/mobileRose start:localhost  # Android emulator/USB (Expo runs adb reverse)
+pnpm --filter @rose/mobileRose test             # Jest + React Native Testing Library
+pnpm --filter @rose/mobileRose web              # runs the app in the browser
 ```
 
 On Windows you can run Android and web. iOS requires macOS + Xcode; use Expo Go on a physical iPhone
 instead.
+
+`android` and `ios` are interactive Expo shortcuts: they open the app but do not write the connection
+metadata. Use `start:localhost` when an agent needs the URL/QR files for an emulator or USB device.
 
 ## Connect with Expo Go (human or agent)
 
@@ -41,7 +44,7 @@ Agents usually run the command and never see the terminal. Read `.expo/rose-dev.
 | Phone and computer on the same Wi-Fi  | `start`           | Default LAN mode                                              |
 | Different network or restricted Wi-Fi | `start:tunnel`    | Slower; may install `@expo/ngrok`                             |
 | Android emulator or USB device        | `start:localhost` | Expo runs `adb reverse` for the dev-server port automatically |
-| iOS simulator (macOS)                 | `ios`             | Starts Expo and opens the simulator                           |
+| iOS simulator (macOS)                 | `ios`             | Interactive shortcut; opens the simulator (no metadata files) |
 
 - The QR appears only in an interactive Expo terminal. Press `E` to reprint it; `CI=1` disables it.
 - Expo Go must match SDK 58: install from <https://expo.dev/go> or run
