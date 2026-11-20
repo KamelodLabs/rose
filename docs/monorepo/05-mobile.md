@@ -49,6 +49,7 @@ automatically. Prefer that over `Platform.OS` branches for larger differences.
 
 | Task           | Command                                                      |
 | -------------- | ------------------------------------------------------------ |
+| Dev (turbo)    | `pnpm --filter @rose/mobileRose dev` (what `pnpm dev` runs)  |
 | Dev server     | `pnpm --filter @rose/mobileRose start`                       |
 | Test           | `pnpm --filter @rose/mobileRose test`                        |
 | Test watch     | `pnpm --filter @rose/mobileRose test:watch`                  |

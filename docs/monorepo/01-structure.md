@@ -8,7 +8,7 @@ the Go API is wrapped in a tiny npm package so a single task graph covers all th
 1. Open `pnpm-workspace.yaml` — the three folders plus a reserved `packages/*` glob.
 2. Open `turbo.json` — the task graph (`build`, `dev`, `lint`, `check-types`, `test`).
 3. Open any project's `package.json` — task names line up through Turbo, but each app adds its own
-   scripts (`start` only on web/mobile, `lint:complexity` only on the API).
+   scripts (`start` only on web/mobile, `dev` on mobile too, `lint:complexity` only on the API).
 
 ## Tree
 
@@ -72,20 +72,20 @@ Root scripts are a mix: `dev`, `build`, `lint`, `check-types`, and `test` fan ou
 directly at the root.
 
 This keeps a single task graph for a polyglot repo without installing a second task runner. `pnpm dev`
-is the exception: it starts web and API only, because `mobileRose` has no `dev` script. Start mobile
-with `pnpm --filter @rose/mobileRose start`.
+starts all three apps: web, API, and mobile (Expo). Mobile keeps both `dev` and `start` so you can run
+it alone with `pnpm --filter @rose/mobileRose start`.
 
 ## Task names across apps
 
 The shared names line up, but the apps are not identical:
 
-| Task    | Root          | `webRose`    | `mobileRose`         | `apiRose`             |
-| ------- | ------------- | ------------ | -------------------- | --------------------- |
-| `dev`   | turbo fan-out | `next dev`   | none (use `start`)   | `go run ./cmd/server` |
-| `start` | none          | `next start` | `expo start`         | none                  |
-| `build` | turbo fan-out | `next build` | none (EAS builds it) | `go build`            |
-| `test`  | turbo fan-out | `vitest run` | `jest`               | `go test ./...`       |
-| `lint`  | turbo fan-out | `eslint`     | `expo lint`          | `go vet ./...`        |
+| Task    | Root          | `webRose`                           | `mobileRose`         | `apiRose`             |
+| ------- | ------------- | ----------------------------------- | -------------------- | --------------------- |
+| `dev`   | turbo fan-out | `next dev`                          | `expo start`         | `go run ./cmd/server` |
+| `start` | none          | `node scripts/start-standalone.mjs` | `expo start`         | none                  |
+| `build` | turbo fan-out | `next build`                        | none (EAS builds it) | `go build`            |
+| `test`  | turbo fan-out | `vitest run`                        | `jest`               | `go test ./...`       |
+| `lint`  | turbo fan-out | `eslint`                            | `expo lint`          | `go vet ./...`        |
 
 ## Dependency graph
 
@@ -142,7 +142,7 @@ actual type source is `expo/types`, configured in `mobileRose/tsconfig.json`. Do
 - [ ] You can explain why `apiRose/package.json` exists.
 - [ ] You know the root is the only place where `pnpm install` runs.
 - [ ] You know `packages/*` is reserved, not active.
-- [ ] You know `pnpm dev` does not start the mobile app.
+- [ ] You know `pnpm dev` starts the web app, the API, and mobile.
 
 ## Next step
 
