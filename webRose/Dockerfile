@@ -4,6 +4,8 @@
 FROM node:24-slim AS base
 RUN npm install -g pnpm@10.33.4
 WORKDIR /repo
+# Do not run the root prepare hook here: this stage has no .git directory for husky.
+ENV HUSKY=0
 
 # Install only what the web app needs. Every workspace manifest must exist so the
 # frozen lockfile can be validated.
