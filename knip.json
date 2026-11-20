@@ -14,6 +14,7 @@
         "src/app/**/*.{ts,tsx}",
         "src/**/*.test.{ts,tsx}",
         "scripts/reset-project.js",
+        "scripts/start-expo.mjs",
         "test/style-mock.js"
       ]
     },
