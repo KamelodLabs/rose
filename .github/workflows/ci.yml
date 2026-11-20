@@ -48,12 +48,26 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
+      - name: Cache Prettier
+        uses: actions/cache@v6
+        with:
+          path: .cache/prettier
+          key: prettier-${{ runner.os }}-${{ hashFiles('pnpm-lock.yaml', '.prettierrc.json', '.prettierignore') }}
+          restore-keys: |
+            prettier-${{ runner.os }}-
+
       - name: Check formatting
-        run: pnpm exec prettier --check .
+        run: pnpm exec prettier --check . --cache --cache-location .cache/prettier
 
       # apiRose is excluded here: its lint/check-types scripts run go vet (go job owns that).
       - name: Lint and type check
         run: pnpm exec turbo run lint check-types --filter=@rose/webRose --filter=@rose/mobileRose
+
+      - name: Test
+        run: pnpm exec turbo run test --filter=@rose/webRose --filter=@rose/mobileRose
+
+      - name: Quality gates
+        run: pnpm quality
 
       - name: Build web
         run: pnpm exec turbo run build --filter=@rose/webRose
@@ -78,7 +92,7 @@ jobs:
         run: go vet ./...
 
       - name: Test
-        run: go test ./...
+        run: go test -race ./...
 
       - name: Build
         run: go build ./...
