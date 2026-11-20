@@ -15,6 +15,9 @@ pnpm --filter @rose/mobileRose web              # runs the app in the browser
 On Windows you can run Android and web. iOS requires macOS + Xcode; use Expo Go on a physical iPhone
 instead.
 
+`pnpm dev:start` runs the same wrapper in the background; its URL is in `.dev/services.json` and
+`mobileRose/.expo/rose-dev.json`.
+
 `android` and `ios` are interactive Expo shortcuts: they open the app but do not write the connection
 metadata. Use `start:localhost` when an agent needs the URL/QR files for an emulator or USB device.
 

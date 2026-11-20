@@ -1,16 +1,20 @@
 # Day-to-day commands
 
-Everything is driven from the repo root. Most root scripts fan out through Turborepo; `format`,
-`format:check`, `prepare`, `quality`, `quality:duplication`, and `quality:unused` run directly. Filters
-narrow the work to one project. Use this page as the command reference.
+Everything is driven from the repo root. `dev`, `build`, `lint`, `check-types`, and `test` enter the
+Turbo task graph; `verify`, `dev:start`, `dev:status`, `dev:stop`, `dev:logs`, `doctor:repo`, `clean`,
+`promote`, `format`, `format:check`, `prepare`, and `quality` run directly. Filters narrow the work to
+one project. Use this page as the command reference.
 
 ## Quick path
 
 ```powershell
 pnpm install      # once; `prepare` installs the Husky hooks
-pnpm dev          # web + API + mobile (Expo) in parallel
+pnpm dev          # web + API + mobile in the foreground
+pnpm dev:start    # background services; state in .dev/services.json
+pnpm dev:status   # ports, URLs, PIDs and health
 pnpm test         # Vitest (web) + Jest (mobile) + go test (api)
 pnpm quality      # jscpd duplication + knip unused-code gates
+pnpm verify       # full gate before a PR
 pnpm check-types  # TypeScript + go vet
 pnpm lint         # eslint + expo lint + go vet
 pnpm build        # web + api (mobile is built by EAS)
@@ -35,9 +39,32 @@ the root.
 | `pnpm quality`             | `quality:duplication` then `quality:unused`              | repo      |
 | `pnpm quality:duplication` | jscpd; fails above the 7% duplication threshold          | repo      |
 | `pnpm quality:unused`      | knip with `--max-issues 0`; fails on any unused file/dep | repo      |
+| `pnpm verify`              | `format:check` + lint + types + test + quality + build   | repo      |
+| `pnpm dev:start`           | Background API/web/mobile + `.dev/services.json`         | all       |
+| `pnpm dev:status`          | Probe registered services and refresh their statuses     | all       |
+| `pnpm dev:stop`            | Stop the registered process trees                        | all       |
+| `pnpm dev:logs`            | Tail a service log (`.dev/logs/`)                        | all       |
+| `pnpm doctor:repo`         | Toolchain, ports, metadata and git diagnosis             | repo      |
+| `pnpm clean`               | Dry-run generated caches; `--yes` deletes                | repo      |
+| `pnpm promote <name>`      | Dry-run promotion; `--yes` executes it                   | repo      |
 | `pnpm format`              | Prettier write over the repo                             | all files |
 | `pnpm format:check`        | Prettier check (CI-friendly)                             | all files |
 | `pnpm prepare`             | Installs the Husky Git hooks (runs on `pnpm install`)    | repo      |
+
+## Agent utilities
+
+`docs/scripts/` holds deterministic helpers (see `docs/scripts/README.md`). For machine-readable
+output, call the scripts directly:
+
+```powershell
+node docs/scripts/dev.mjs start|status|stop --json
+node docs/scripts/doctor.mjs --json
+node docs/scripts/clean.mjs --json
+node docs/scripts/promote.mjs <name> --json
+```
+
+Use the direct `node` form when you need exact flags. `pnpm doctor` is pnpm's built-in command; use
+`pnpm doctor:repo` or `node docs/scripts/doctor.mjs`.
 
 ## Filtering
 
@@ -97,6 +124,18 @@ rerunning.
 CI restores Turbo from `.turbo/cache` and keeps Prettier's cache in `.cache/prettier`
 (`prettier --check . --cache --cache-location .cache/prettier`). Both are disposable and rebuild on
 demand.
+
+## Structured output
+
+For agents that need to parse results:
+
+- `pnpm exec turbo run <task> --dry=json` prints the task graph.
+- `pnpm exec turbo run <task> --json` prints NDJSON (experimental); add
+  `--output-logs=errors-only` to reduce noise and `--continue` to run independent tasks after a
+  failure.
+- `pnpm install --reporter=append-only` is the non-TTY default; `--reporter=ndjson` is fully
+  machine-readable.
+- ESLint `-f json`, Vitest `--reporter=json`, and Jest `--json` are available for focused parsing.
 
 ## Adding dependencies
 

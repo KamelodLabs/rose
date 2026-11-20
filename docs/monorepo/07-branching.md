@@ -52,6 +52,14 @@ Rules that keep it honest:
 6. **Besides `promote/<name>` hybrids, hotfixes are the only branches cut from `main`; they return
    through PRs to `staging` and `dev`.
 
+## Automated promotion
+
+`pnpm promote <name>` prints the plan. `node docs/scripts/promote.mjs <name> --yes` executes it:
+creates `promote/<name>` from `origin/main`, merges `origin/dev`, opens the staging PR, waits for
+`js`/`go`, merges, opens `staging -> main`, waits, and merges. It refuses a dirty tree, a non-`dev`
+branch, an empty `origin/main..origin/dev`, or unauthenticated `gh`. The manual procedure below is the
+fallback.
+
 ## Promotion procedure
 
 A direct `dev -> staging` PR does not work after the first promotion. `staging` gains a merge commit
@@ -181,7 +189,7 @@ Two practical notes:
 
 - [ ] `dev`, `staging`, and `main` exist and are protected on the host.
 - [ ] Every change reaches `main` through `staging`, except documented hotfixes.
-- [ ] Promotions use a `promote/<name>` hybrid branch and merge commits.
+- [ ] Promotions use `pnpm promote` (or the manual `promote/<name>` hybrid branch) and merge commits.
 - [ ] Hotfixes return through back-merge PRs to `staging` and `dev`.
 - [ ] Releases are annotated tags on `main`.
 
