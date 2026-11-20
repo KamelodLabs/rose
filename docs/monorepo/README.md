@@ -11,13 +11,17 @@ workspace is wired and how to use it end to end without guessing.
    8081; the wrapper picks the next free port and writes the URL to `mobileRose/.expo/rose-dev.json`).
 3. `pnpm test` runs Vitest (web), Jest (mobile), and `go test` (API).
 4. `pnpm quality` runs the duplication and unused-code gates.
-5. Verify: API `http://localhost:8080/health`, web `http://localhost:3000`, Expo on the `expoGoUrl`
+5. `pnpm verify` runs the full gate: format, lint, types, tests, quality, and build.
+6. For background services (agents): `pnpm dev:start`, then `pnpm dev:status`; stop with `pnpm dev:stop`.
+7. Verify: API `http://localhost:8080/health`, web `http://localhost:3000`, Expo on the `expoGoUrl`
    from `mobileRose/.expo/rose-dev.json` (port 8081 by default).
-6. Mobile only (without the rest of the stack): `pnpm --filter @rose/mobileRose start`.
+8. Mobile only (without the rest of the stack): `pnpm --filter @rose/mobileRose start`.
 
 The mobile `start`/`dev` scripts are agent-friendly: they print `[rose-mobile]` lines and write
 `mobileRose/.expo/rose-dev.json` plus `.expo/expo-go-qr.png`. Agents should relay the `expoGoUrl` from
 that JSON file to the human; humans can open the QR PNG or paste the URL into Expo Go manually.
+
+For agent-driven work, read `AGENTS.md` first; it is the single instruction file for coding agents.
 
 ## What is inside
 

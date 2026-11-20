@@ -14,7 +14,7 @@ the Go API is wrapped in a tiny npm package so a single task graph covers all th
 
 ```text
 rose/
-├── package.json            root workspace: turbo tasks + direct format/quality/prepare scripts
+├── package.json            root workspace: turbo tasks + direct verify/dev/quality/clean/promote scripts
 ├── pnpm-workspace.yaml     workspace members + nodeLinker + ignored build scripts
 ├── turbo.json              task graph and cache outputs
 ├── tsconfig.base.json      shared strict TypeScript baseline
@@ -22,6 +22,11 @@ rose/
 ├── .prettierignore
 ├── .editorconfig
 ├── .gitignore
+├── .node-version           Node 24 for nvm/fnm/mise
+├── AGENTS.md               single instruction file for coding agents
+├── docs/
+│   ├── monorepo/           human docs
+│   └── scripts/            deterministic dev utilities (dev/doctor/clean/promote)
 ├── .npmrc                  engine-strict=true (unsupported Node fails the install)
 ├── .jscpd.json             duplication gate (7% threshold)
 ├── knip.json               unused files/dependencies gate
@@ -133,6 +138,7 @@ Generated artifacts are gitignored and never committed:
 | `.atl/`                           | local tooling     | scratch/cache state                                             |
 | `expo-env.d.ts`                   | Expo CLI          | included by `mobileRose/tsconfig.json`; types from `expo/types` |
 | `.cache/`                         | Prettier cache    | recreated when needed                                           |
+| `.dev/`                           | dev scripts       | service registry and logs; never committed                      |
 | `.turbo/`, `.next/`, `bin/`       | build/task output | recreated by the tool that owns it                              |
 | `mobileRose/.expo/rose-dev.json`  | mobile wrapper    | connection metadata (`expoGoUrl`, host, port, status)           |
 | `mobileRose/.expo/expo-go-qr.png` | mobile wrapper    | QR image for the Expo Go URL                                    |
@@ -145,7 +151,7 @@ actual type source is `expo/types`, configured in `mobileRose/tsconfig.json`. Do
 - [ ] You can explain why `apiRose/package.json` exists.
 - [ ] You know the root is the only place where `pnpm install` runs.
 - [ ] You know `packages/*` is reserved, not active.
-- [ ] You know `pnpm dev` starts the web app, the API, and mobile.
+- [ ] You know `pnpm dev` is foreground and `pnpm dev:start` is the background/agent path.
 
 ## Next step
 
