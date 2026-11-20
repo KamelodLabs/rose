@@ -40,16 +40,16 @@ Alias: `@/*` resolves to `webRose/src/*`.
 
 ## Commands
 
-| Task        | Command                                                                                                                                                                                                                                              |
-| ----------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Dev         | `pnpm --filter @rose/webRose dev`                                                                                                                                                                                                                    |
-| Build       | `pnpm exec turbo run build --filter=@rose/webRose`                                                                                                                                                                                                   |
-| Start prod  | Run the Docker image, or from `webRose/` after a build copy `.next/static` to `.next/standalone/webRose/.next/static` and `public` to `.next/standalone/webRose/public` (as the Dockerfile does), then run `node .next/standalone/webRose/server.js` |
-| Lint        | `pnpm --filter @rose/webRose lint`                                                                                                                                                                                                                   |
-| Type check  | `pnpm --filter @rose/webRose check-types`                                                                                                                                                                                                            |
-| Test        | `pnpm --filter @rose/webRose test`                                                                                                                                                                                                                   |
-| Test watch  | `pnpm --filter @rose/webRose test:watch`                                                                                                                                                                                                             |
-| Custom port | `pnpm --filter @rose/webRose exec next dev -p 3001`                                                                                                                                                                                                  |
+| Task        | Command                                                                                                                                      |
+| ----------- | -------------------------------------------------------------------------------------------------------------------------------------------- |
+| Dev         | `pnpm --filter @rose/webRose dev`                                                                                                            |
+| Build       | `pnpm exec turbo run build --filter=@rose/webRose`                                                                                           |
+| Start prod  | `pnpm --filter @rose/webRose start` (after a build; it copies `.next/static` and `public` into the standalone tree), or run the Docker image |
+| Lint        | `pnpm --filter @rose/webRose lint`                                                                                                           |
+| Type check  | `pnpm --filter @rose/webRose check-types`                                                                                                    |
+| Test        | `pnpm --filter @rose/webRose test`                                                                                                           |
+| Test watch  | `pnpm --filter @rose/webRose test:watch`                                                                                                     |
+| Custom port | `pnpm --filter @rose/webRose exec next dev -p 3001`                                                                                          |
 
 ## Testing
 

@@ -145,7 +145,6 @@ lockfile immediately.
 
 | Behavior                                     | Why                                                            |
 | -------------------------------------------- | -------------------------------------------------------------- |
-| `mobileRose` has no `dev` script             | Expo uses `start`                                              |
 | `mobileRose` has no `build` script           | Native builds go through EAS                                   |
 | `apiRose` has no `start` script              | The binary is run directly or through `go run`                 |
 | Root has no ESLint config                    | `eslint-config-next` and `eslint-config-expo` are incompatible |
