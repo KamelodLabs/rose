@@ -41,7 +41,10 @@ Stop-Process -Id <PID> -Force
 # Or move the service
 pnpm --filter @rose/webRose exec next dev -p 3001
 $env:PORT=9000; pnpm --filter @rose/apiRose dev
-pnpm --filter @rose/mobileRose exec expo start --port 8082
+# The mobile wrapper picks the next free port automatically
+pnpm --filter @rose/mobileRose start
+# Stock Expo with an explicit port (no metadata/QR files)
+pnpm --filter @rose/mobileRose start:plain -- --port 8082
 ```
 
 ## Phone cannot connect to Expo Go
