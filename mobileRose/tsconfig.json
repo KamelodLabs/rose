@@ -2,7 +2,7 @@
   "extends": ["expo/tsconfig.base", "../tsconfig.base.json"],
   "compilerOptions": {
     "strict": true,
-    "types": ["jest"],
+    "types": ["jest", "expo/types"],
     "paths": {
       "@/*": ["./src/*"],
       "@/assets/*": ["./assets/*"]
