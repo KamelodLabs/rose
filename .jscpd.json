@@ -1,0 +1,17 @@
+{
+  "threshold": 7,
+  "minLines": 8,
+  "minTokens": 70,
+  "format": ["typescript", "tsx", "javascript", "jsx", "go"],
+  "ignore": [
+    "**/node_modules/**",
+    "**/.next/**",
+    "**/.expo/**",
+    "**/android/**",
+    "**/ios/**",
+    "**/dist/**",
+    "**/bin/**",
+    "**/*.d.ts",
+    "**/pnpm-lock.yaml"
+  ]
+}

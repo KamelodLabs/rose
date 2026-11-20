@@ -12,9 +12,22 @@
     "check-types": "turbo run check-types",
     "test": "turbo run test",
     "format": "prettier --write .",
-    "format:check": "prettier --check ."
+    "format:check": "prettier --check .",
+    "prepare": "husky",
+    "quality": "pnpm quality:duplication && pnpm quality:unused",
+    "quality:duplication": "jscpd . --config .jscpd.json",
+    "quality:unused": "knip --include files,dependencies --max-issues 0 --no-config-hints"
+  },
+  "lint-staged": {
+    "*.{ts,tsx,js,jsx,mjs,cjs,json,jsonc,md,mdx,yml,yaml,css}": "prettier --write"
   },
   "devDependencies": {
+    "@commitlint/cli": "^21.2.4",
+    "@commitlint/config-conventional": "^21.2.4",
+    "husky": "^9.1.7",
+    "jscpd": "^5.4.3",
+    "knip": "^6.46.1",
+    "lint-staged": "^17.6.1",
     "prettier": "^3.10.1",
     "turbo": "^2.11.11"
   }
