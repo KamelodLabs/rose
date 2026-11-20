@@ -14,6 +14,10 @@ workspace is wired and how to use it end to end without guessing.
    `http://localhost:8081`.
 6. Mobile only (without the rest of the stack): `pnpm --filter @rose/mobileRose start`.
 
+The mobile `start`/`dev` scripts are agent-friendly: they print `[rose-mobile]` lines and write
+`mobileRose/.expo/rose-dev.json` plus `.expo/expo-go-qr.png`. Agents should relay the `expoGoUrl` from
+that JSON file to the human; humans can open the QR PNG or paste the URL into Expo Go manually.
+
 ## What is inside
 
 | Path          | Project             | Stack                                       | Package            |
@@ -54,6 +58,9 @@ These are generated locally, ignored by Git, and never committed:
 | `.atl/`         | local tooling           | scratch/cache state, safe to delete                        |
 | `expo-env.d.ts` | Expo CLI                | types come from `expo/types` in `mobileRose/tsconfig.json` |
 | `.cache/`       | Prettier (local and CI) | recreated on demand                                        |
+
+The mobile wrapper also writes `mobileRose/.expo/rose-dev.json` (connection metadata) and
+`mobileRose/.expo/expo-go-qr.png` (QR image) inside the ignored `.expo/` directory.
 
 `mobileRose/tsconfig.json` includes `expo-env.d.ts` so the generated declarations resolve; the actual
 types are configured as `types: ["jest", "expo/types"]`. Run any Expo command to regenerate the file.

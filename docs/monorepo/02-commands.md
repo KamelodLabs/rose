@@ -17,7 +17,8 @@ pnpm build        # web + api (mobile is built by EAS)
 ```
 
 Stop `pnpm dev` with `Ctrl+C`; Turbo terminates all child tasks. To run mobile alone, use
-`pnpm --filter @rose/mobileRose start` (Expo on port 8081).
+`pnpm --filter @rose/mobileRose start`. The mobile `start`/`dev` scripts are agent-friendly wrappers:
+they write `.expo/rose-dev.json` and `.expo/expo-go-qr.png`, and pick the first free port from 8081.
 
 ## Root scripts
 
@@ -60,16 +61,21 @@ Root commands cover the common path. App-level extras:
   `pnpm --filter @rose/webRose test:watch` (watch mode).
 - `pnpm --filter @rose/mobileRose test` (Jest once) and
   `pnpm --filter @rose/mobileRose test:watch` (watch mode).
+- `pnpm --filter @rose/mobileRose start` or `dev` (agent-friendly Expo Go wrapper; writes
+  `mobileRose/.expo/rose-dev.json` with `expoGoUrl` plus `.expo/expo-go-qr.png`).
+- `pnpm --filter @rose/mobileRose start:localhost` (Expo `--localhost`, for emulator/USB).
+- `pnpm --filter @rose/mobileRose start:tunnel` (Expo Go over the tunnel, for different networks).
+- `pnpm --filter @rose/mobileRose start:plain` (stock `expo start`; pass normal Expo flags yourself).
 - `pnpm --filter @rose/apiRose lint:complexity` runs gocyclo v0.6.0 with
   `-over 10 -ignore _test.go`.
 
 ## Ports
 
-| Service         | Default URL             | How to change                                                |
-| --------------- | ----------------------- | ------------------------------------------------------------ |
-| API             | `http://localhost:8080` | `$env:PORT=9000; pnpm --filter @rose/apiRose dev`            |
-| Web             | `http://localhost:3000` | `pnpm --filter @rose/webRose exec next dev -p 3001`          |
-| Expo dev server | `http://localhost:8081` | `pnpm --filter @rose/mobileRose exec expo start --port 8082` |
+| Service         | Default URL             | How to change                                                        |
+| --------------- | ----------------------- | -------------------------------------------------------------------- |
+| API             | `http://localhost:8080` | `$env:PORT=9000; pnpm --filter @rose/apiRose dev`                    |
+| Web             | `http://localhost:3000` | `pnpm --filter @rose/webRose exec next dev -p 3001`                  |
+| Expo dev server | `http://localhost:8081` | The wrapper picks 8082+ automatically; `start:plain` for stock Expo. |
 
 ## Caching
 

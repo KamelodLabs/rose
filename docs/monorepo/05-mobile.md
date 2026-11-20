@@ -6,7 +6,7 @@ or emulator; ship builds through EAS, not through Turborepo.
 ## Quick path
 
 ```powershell
-pnpm --filter @rose/mobileRose start      # QR code for Expo Go / dev client
+pnpm --filter @rose/mobileRose start      # agent-friendly Expo Go URL + QR/metadata files
 pnpm --filter @rose/mobileRose test       # Jest + React Native Testing Library
 pnpm --filter @rose/mobileRose android    # Android emulator or device
 pnpm --filter @rose/mobileRose web        # runs the app in the browser
@@ -14,6 +14,44 @@ pnpm --filter @rose/mobileRose web        # runs the app in the browser
 
 On Windows you can run Android and web. iOS requires macOS + Xcode; use Expo Go on a physical iPhone
 instead.
+
+## Connect with Expo Go (human or agent)
+
+`start` and `dev` run `scripts/start-expo.mjs`. The wrapper picks a reachable LAN IP, finds a free port
+from 8081, prints machine-readable lines, and writes two files under `mobileRose/.expo/`:
+
+```powershell
+pnpm --filter @rose/mobileRose start
+# [rose-mobile] mode=lan host=192.168.1.7 port=8081
+# [rose-mobile] expo-go: exp://192.168.1.7:8081
+# [rose-mobile] qr: C:\rose\mobileRose\.expo\expo-go-qr.png
+# [rose-mobile] metadata: C:\rose\mobileRose\.expo\rose-dev.json
+```
+
+- `.expo/rose-dev.json` holds `mode`, `host`, `port`, `expoGoUrl`, `qrPath`, `metadataPath`, `pid`, and
+  `status` (`starting`, `ready`, `stopped`).
+- `.expo/expo-go-qr.png` is a 512px QR for the same URL.
+
+Agents usually run the command and never see the terminal. Read `.expo/rose-dev.json` and send its
+`expoGoUrl` to the human; never rely on the QR being visible. The human can open the PNG or use Expo Go
+→ **Enter URL manually**.
+
+| Situation                             | Command           | Notes                                                         |
+| ------------------------------------- | ----------------- | ------------------------------------------------------------- |
+| Phone and computer on the same Wi-Fi  | `start`           | Default LAN mode                                              |
+| Different network or restricted Wi-Fi | `start:tunnel`    | Slower; may install `@expo/ngrok`                             |
+| Android emulator or USB device        | `start:localhost` | Expo runs `adb reverse` for the dev-server port automatically |
+| iOS simulator (macOS)                 | `ios`             | Starts Expo and opens the simulator                           |
+
+- The QR appears only in an interactive Expo terminal. Press `E` to reprint it; `CI=1` disables it.
+- Expo Go must match SDK 58: install from <https://expo.dev/go> or run
+  `pnpm dlx expo-go download android 58`.
+- Firewall: allow Node/Metro on port 8081 for **Private** networks. The wrapper uses 8082+ when 8081 is
+  busy, but the firewall rule still needs the port range you actually use.
+- The wrapper pins the Wi-Fi IP because virtual adapters (Hyper-V, VMware, WSL) would otherwise be
+  advertised and are usually unreachable from the phone. Override with `EXPO_LAN_HOST`.
+- When the app calls the API from a phone, use `EXPO_PUBLIC_API_URL=http://<LAN-IP>:8080`, not
+  `localhost`.
 
 ## Stack
 
@@ -47,18 +85,21 @@ automatically. Prefer that over `Platform.OS` branches for larger differences.
 
 ## Scripts
 
-| Task           | Command                                                      |
-| -------------- | ------------------------------------------------------------ |
-| Dev (turbo)    | `pnpm --filter @rose/mobileRose dev` (what `pnpm dev` runs)  |
-| Dev server     | `pnpm --filter @rose/mobileRose start`                       |
-| Test           | `pnpm --filter @rose/mobileRose test`                        |
-| Test watch     | `pnpm --filter @rose/mobileRose test:watch`                  |
-| Android        | `pnpm --filter @rose/mobileRose android`                     |
-| iOS (macOS)    | `pnpm --filter @rose/mobileRose ios`                         |
-| Web preview    | `pnpm --filter @rose/mobileRose web`                         |
-| Lint           | `pnpm --filter @rose/mobileRose lint` (`expo lint`)          |
-| Type check     | `pnpm --filter @rose/mobileRose check-types`                 |
-| Reset template | `pnpm --filter @rose/mobileRose reset-project` (destructive) |
+| Task           | Command                                                                   |
+| -------------- | ------------------------------------------------------------------------- |
+| Dev (turbo)    | `pnpm --filter @rose/mobileRose dev` (what `pnpm dev` runs; same wrapper) |
+| Dev server     | `pnpm --filter @rose/mobileRose start` (LAN URL, QR, metadata)            |
+| Localhost      | `pnpm --filter @rose/mobileRose start:localhost` (emulator/USB)           |
+| Tunnel         | `pnpm --filter @rose/mobileRose start:tunnel` (different network)         |
+| Stock Expo     | `pnpm --filter @rose/mobileRose start:plain` (no wrapper)                 |
+| Test           | `pnpm --filter @rose/mobileRose test`                                     |
+| Test watch     | `pnpm --filter @rose/mobileRose test:watch`                               |
+| Android        | `pnpm --filter @rose/mobileRose android`                                  |
+| iOS (macOS)    | `pnpm --filter @rose/mobileRose ios`                                      |
+| Web preview    | `pnpm --filter @rose/mobileRose web`                                      |
+| Lint           | `pnpm --filter @rose/mobileRose lint` (`expo lint`)                       |
+| Type check     | `pnpm --filter @rose/mobileRose check-types`                              |
+| Reset template | `pnpm --filter @rose/mobileRose reset-project` (destructive)              |
 
 There is **no `build` script on purpose**. Native binaries are produced by EAS:
 
@@ -95,6 +136,10 @@ Jest (`jest-expo` preset) plus React Native Testing Library.
 `expo-env.d.ts` is generated by Expo and gitignored. Do not commit it; regenerate it by running any
 Expo command (for example `pnpm --filter @rose/mobileRose start`). Types come from `expo/types`, listed
 in `mobileRose/tsconfig.json`; the file is included so the generated declarations resolve.
+
+The wrapper also writes `mobileRose/.expo/rose-dev.json` (connection metadata) and
+`mobileRose/.expo/expo-go-qr.png` (QR image). Both are inside the gitignored `.expo/` directory and are
+recreated on every start. Do not commit them.
 
 ## Add a screen
 
