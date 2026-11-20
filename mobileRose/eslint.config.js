@@ -1,36 +1,21 @@
 // https://docs.expo.dev/guides/using-eslint/
 const { defineConfig } = require('eslint/config');
 const expoConfig = require('eslint-config-expo/flat');
-
-const complexityRules = {
-  complexity: ['error', { max: 10 }],
-  'max-depth': ['error', { max: 4 }],
-  'max-params': ['error', { max: 4 }],
-  'max-lines-per-function': [
-    'error',
-    { max: 80, skipBlankLines: true, skipComments: true, IIFEs: true },
-  ],
-  'no-warning-comments': ['error', { terms: ['todo', 'fixme', 'hack'], location: 'start' }],
-};
+const complexity = require('../eslint.complexity.cjs');
 
 module.exports = defineConfig([
   expoConfig,
   {
     ignores: ['dist/*'],
   },
-  { files: ['src/**/*.{ts,tsx}'], rules: complexityRules },
+  { files: ['src/**/*.{ts,tsx}'], rules: complexity.complexityRules },
   {
     files: ['src/**/*.tsx'],
-    rules: {
-      'max-lines-per-function': [
-        'error',
-        { max: 150, skipBlankLines: true, skipComments: true, IIFEs: true },
-      ],
-    },
+    rules: complexity.tsxRules,
   },
   {
     files: ['src/**/*.test.{ts,tsx}'],
-    rules: { complexity: 'off', 'max-lines-per-function': 'off' },
+    rules: complexity.testRules,
   },
   {
     files: ['src/hooks/use-color-scheme.web.ts'],
