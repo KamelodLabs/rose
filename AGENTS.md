@@ -32,6 +32,23 @@ node docs/scripts/clean.mjs --json
 node docs/scripts/promote.mjs <name> --json
 ```
 
+More utilities:
+
+```powershell
+pnpm repo:status         # branch, diff, services, PR and checks
+pnpm review:prep         # self-review before commit
+pnpm ci:inspect [pr]     # failing checks and logs
+pnpm pr:open             # dry-run; --yes pushes and opens a PR to dev
+pnpm affected            # changed packages + suggested commands
+pnpm guard               # secrets, generated files and large files
+pnpm worktree:new <name> # isolated worktree under ../rose-worktrees
+pnpm sync                # dry-run; --yes fast-forwards long-lived branches
+pnpm expo:url / expo:qr  # Expo Go URL / QR image
+pnpm deps:check          # outdated pnpm/Expo/Go (read-only)
+pnpm release <vX.Y.Z>    # dry-run; --yes tags and pushes
+pnpm docs:check          # links + AGENTS.md size
+```
+
 ## Repo map
 
 | Path                 | What it is                                                |
