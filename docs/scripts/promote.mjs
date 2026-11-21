@@ -58,6 +58,26 @@ function gh(args) {
   return runCommand('gh', args);
 }
 
+function sleepSync(milliseconds) {
+  Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, milliseconds);
+}
+
+function waitForChecks(number) {
+  for (let attempt = 0; attempt < 24; attempt += 1) {
+    const view = gh(['pr', 'view', String(number), '--json', 'statusCheckRollup']);
+    if (view.ok) {
+      try {
+        const rollup = JSON.parse(view.stdout).statusCheckRollup ?? [];
+        if (rollup.length > 0) return;
+      } catch {
+        // Keep polling while the host registers the checks.
+      }
+    }
+    sleepSync(5000);
+  }
+  throw new Error(`no checks appeared for PR #${number} within 120s`);
+}
+
 function planFor(name) {
   const branch = `promote/${name}`;
   const mergeMessage = `chore: promote ${name}`;
@@ -192,6 +212,7 @@ function execute(name, jsonMode) {
 
     stage = 'staging-checks';
     say(`Waiting for checks on PR #${stagingNumber}...`);
+    waitForChecks(stagingNumber);
     const stagingChecks = gh(['pr', 'checks', String(stagingNumber), '--watch', '--fail-fast']);
     if (stagingChecks) say(stagingChecks);
 
@@ -233,6 +254,7 @@ function execute(name, jsonMode) {
 
     stage = 'main-checks';
     say(`Waiting for checks on PR #${mainNumber}...`);
+    waitForChecks(mainNumber);
     const mainChecks = gh(['pr', 'checks', String(mainNumber), '--watch', '--fail-fast']);
     if (mainChecks) say(mainChecks);
 
