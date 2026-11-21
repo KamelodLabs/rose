@@ -47,6 +47,17 @@ pnpm --filter @rose/mobileRose start
 pnpm --filter @rose/mobileRose start:plain -- --port 8082
 ```
 
+## Agent utilities
+
+```powershell
+node docs/scripts/doctor.mjs --json      # toolchain, ports, metadata
+node docs/scripts/dev.mjs status --json  # service registry
+pnpm dev:stop                            # stop background services
+node docs/scripts/clean.mjs --json       # cache cleanup dry run
+```
+
+`pnpm doctor` is pnpm's built-in command; use `pnpm doctor:repo` or the direct `node` command.
+
 ## Phone cannot connect to Expo Go
 
 Work through this checklist in order; most failures are the wrong host or a blocked port.
