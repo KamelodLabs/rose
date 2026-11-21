@@ -63,7 +63,7 @@ function sleepSync(milliseconds) {
 }
 
 function waitForChecks(number) {
-  for (let attempt = 0; attempt < 24; attempt += 1) {
+  for (let attempt = 0; attempt < 60; attempt += 1) {
     const view = gh(['pr', 'view', String(number), '--json', 'statusCheckRollup']);
     if (view.ok) {
       try {
@@ -75,7 +75,7 @@ function waitForChecks(number) {
     }
     sleepSync(5000);
   }
-  throw new Error(`no checks appeared for PR #${number} within 120s`);
+  throw new Error(`no checks appeared for PR #${number} within 300s`);
 }
 
 function planFor(name) {
