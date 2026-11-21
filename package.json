@@ -39,7 +39,7 @@
     "quality": "pnpm quality:duplication && pnpm quality:unused",
     "quality:duplication": "jscpd . --config .jscpd.json",
     "quality:unused": "knip --include files,dependencies --max-issues 0 --no-config-hints",
-    "verify": "pnpm format:check && pnpm lint && pnpm check-types && pnpm test && pnpm quality && pnpm build"
+    "verify": "pnpm format:check && pnpm lint && pnpm check-types && pnpm test && pnpm quality && pnpm docs:check && pnpm build"
   },
   "lint-staged": {
     "*.{ts,tsx,js,jsx,mjs,cjs,json,jsonc,md,mdx,yml,yaml,css}": "prettier --write"
