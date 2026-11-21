@@ -26,6 +26,8 @@ jobs:
     timeout-minutes: 15
     steps:
       - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
 
       # Reads the pnpm version from package.json#packageManager and caches the store.
       - uses: pnpm/action-setup@v6
@@ -68,6 +70,15 @@ jobs:
 
       - name: Quality gates
         run: pnpm quality
+
+      - name: Docs and placement
+        run: node docs/scripts/docs-check.mjs
+
+      - name: Guard changed files
+        if: github.event_name == 'pull_request'
+        env:
+          BASE_REF: ${{ github.base_ref }}
+        run: node docs/scripts/guard.mjs --diff --base "origin/$BASE_REF"
 
       - name: Build web
         run: pnpm exec turbo run build --filter=@rose/webRose

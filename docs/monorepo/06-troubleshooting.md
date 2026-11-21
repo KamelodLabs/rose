@@ -54,6 +54,7 @@ node docs/scripts/doctor.mjs --json      # toolchain, ports, metadata
 node docs/scripts/dev.mjs status --json  # service registry
 pnpm dev:stop                            # stop background services
 node docs/scripts/clean.mjs --json       # cache cleanup dry run
+node docs/scripts/docs-check.mjs --json  # docs placement, links and registry
 ```
 
 `pnpm doctor` is pnpm's built-in command; use `pnpm doctor:repo` or the direct `node` command.

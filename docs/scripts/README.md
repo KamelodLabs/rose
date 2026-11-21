@@ -20,7 +20,7 @@ requested.
 | `expo`        | `node docs/scripts/expo.mjs <url\|qr> [--open]`         | Expo Go URL/QR from `mobileRose/.expo/rose-dev.json`                       |
 | `deps-check`  | `node docs/scripts/deps-check.mjs`                      | Read-only outdated pnpm, Expo and Go dependencies                          |
 | `release`     | `node docs/scripts/release.mjs <vX.Y.Z> [--yes]`        | Validates main/CI/tag, then creates and pushes an annotated tag            |
-| `docs-check`  | `node docs/scripts/docs-check.mjs`                      | Broken relative links and the AGENTS.md size/sections                      |
+| `docs-check`  | `node docs/scripts/docs-check.mjs`                      | Links, Markdown placement, AGENTS.md, lockfile, tests, script registry     |
 | `promote`     | `node docs/scripts/promote.mjs <name>`                  | Plans (dry run) or executes the dev -> staging -> main promotion           |
 
 ## Examples
@@ -31,6 +31,7 @@ pnpm repo:status
 pnpm review:prep
 pnpm affected
 pnpm guard
+pnpm docs:check
 
 # Background services with a registry and per-service logs
 pnpm dev:start                 # or: node docs/scripts/dev.mjs start
@@ -90,14 +91,22 @@ readiness comes from `mobileRose/.expo/rose-dev.json` and its `expoGoUrl` uses t
 
 ## JSON output
 
-| Script    | `--json` payload                                                                     |
-| --------- | ------------------------------------------------------------------------------------ |
-| `dev`     | The service registry (`startedAt`, `services`, `stoppedAt` after stop)               |
-| `doctor`  | `{ ok, checkedAt, summary: { ok, warn, fail }, checks: [{ name, status, detail }] }` |
-| `clean`   | `{ dryRun, refused, targets, totalBytes }` or `{ dryRun: false, deleted, failed }`   |
-| `promote` | Dry run: `{ dryRun: true, name, branch, merge, prs, commits, steps }`                |
+| Script       | `--json` payload                                                                     |
+| ------------ | ------------------------------------------------------------------------------------ |
+| `dev`        | The service registry (`startedAt`, `services`, `stoppedAt` after stop)               |
+| `doctor`     | `{ ok, checkedAt, summary: { ok, warn, fail }, checks: [{ name, status, detail }] }` |
+| `clean`      | `{ dryRun, refused, targets, totalBytes }` or `{ dryRun: false, deleted, failed }`   |
+| `docs-check` | `{ ok, files, issues: [{ type, file, line, detail }] }`                              |
+| `promote`    | Dry run: `{ dryRun: true, name, branch, merge, prs, commits, steps }`                |
 
 `dev.mjs logs` also accepts `--json` and returns the last lines of each log file.
+
+## Structure gates
+
+`pnpm docs:check` enforces Markdown placement, a single root `AGENTS.md`, the docs index, one
+`pnpm-lock.yaml`, test placement and the `docs/scripts` registry. It runs inside `pnpm verify` and in
+CI. `.husky/pre-commit` also runs `guard --staged`, so misplaced Markdown, secrets, generated files
+and forbidden lockfiles fail before the commit is created. CI runs the same guard on the PR diff.
 
 ## Safety
 
