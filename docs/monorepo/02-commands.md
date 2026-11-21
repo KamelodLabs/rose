@@ -29,27 +29,28 @@ they write `.expo/rose-dev.json` and `.expo/expo-go-qr.png`, and pick the first 
 `dev`, `build`, `lint`, `check-types`, and `test` enter the Turbo task graph; the rest run directly at
 the root.
 
-| Script                     | What it does                                             | Scope     |
-| -------------------------- | -------------------------------------------------------- | --------- |
-| `pnpm dev`                 | Persistent dev servers, no cache                         | all       |
-| `pnpm build`               | Production builds                                        | web + api |
-| `pnpm lint`                | `eslint`, `expo lint`, `go vet`                          | all       |
-| `pnpm check-types`         | `next typegen && tsc --noEmit`, `tsc --noEmit`, `go vet` | all       |
-| `pnpm test`                | Vitest (web), Jest (mobile), `go test ./...` (api)       | all       |
-| `pnpm quality`             | `quality:duplication` then `quality:unused`              | repo      |
-| `pnpm quality:duplication` | jscpd; fails above the 7% duplication threshold          | repo      |
-| `pnpm quality:unused`      | knip with `--max-issues 0`; fails on any unused file/dep | repo      |
-| `pnpm verify`              | `format:check` + lint + types + test + quality + build   | repo      |
-| `pnpm dev:start`           | Background API/web/mobile + `.dev/services.json`         | all       |
-| `pnpm dev:status`          | Probe registered services and refresh their statuses     | all       |
-| `pnpm dev:stop`            | Stop the registered process trees                        | all       |
-| `pnpm dev:logs`            | Tail a service log (`.dev/logs/`)                        | all       |
-| `pnpm doctor:repo`         | Toolchain, ports, metadata and git diagnosis             | repo      |
-| `pnpm clean`               | Dry-run generated caches; `--yes` deletes                | repo      |
-| `pnpm promote <name>`      | Dry-run promotion; `--yes` executes it                   | repo      |
-| `pnpm format`              | Prettier write over the repo                             | all files |
-| `pnpm format:check`        | Prettier check (CI-friendly)                             | all files |
-| `pnpm prepare`             | Installs the Husky Git hooks (runs on `pnpm install`)    | repo      |
+| Script                     | What it does                                                  | Scope     |
+| -------------------------- | ------------------------------------------------------------- | --------- |
+| `pnpm dev`                 | Persistent dev servers, no cache                              | all       |
+| `pnpm build`               | Production builds                                             | web + api |
+| `pnpm lint`                | `eslint`, `expo lint`, `go vet`                               | all       |
+| `pnpm check-types`         | `next typegen && tsc --noEmit`, `tsc --noEmit`, `go vet`      | all       |
+| `pnpm test`                | Vitest (web), Jest (mobile), `go test ./...` (api)            | all       |
+| `pnpm quality`             | `quality:duplication` then `quality:unused`                   | repo      |
+| `pnpm quality:duplication` | jscpd; fails above the 7% duplication threshold               | repo      |
+| `pnpm quality:unused`      | knip with `--max-issues 0`; fails on any unused file/dep      | repo      |
+| `pnpm verify`              | `format:check` + lint + types + test + quality + docs + build | repo      |
+| `pnpm dev:start`           | Background API/web/mobile + `.dev/services.json`              | all       |
+| `pnpm dev:status`          | Probe registered services and refresh their statuses          | all       |
+| `pnpm dev:stop`            | Stop the registered process trees                             | all       |
+| `pnpm dev:logs`            | Tail a service log (`.dev/logs/`)                             | all       |
+| `pnpm doctor:repo`         | Toolchain, ports, metadata and git diagnosis                  | repo      |
+| `pnpm clean`               | Dry-run generated caches; `--yes` deletes                     | repo      |
+| `pnpm promote <name>`      | Dry-run promotion; `--yes` executes it                        | repo      |
+| `pnpm docs:check`          | Links, Markdown placement, AGENTS, lockfile, tests            | repo      |
+| `pnpm format`              | Prettier write over the repo                                  | all files |
+| `pnpm format:check`        | Prettier check (CI-friendly)                                  | all files |
+| `pnpm prepare`             | Installs the Husky Git hooks (runs on `pnpm install`)         | repo      |
 
 ## Agent utilities
 
@@ -61,6 +62,7 @@ node docs/scripts/dev.mjs start|status|stop --json
 node docs/scripts/doctor.mjs --json
 node docs/scripts/clean.mjs --json
 node docs/scripts/promote.mjs <name> --json
+node docs/scripts/docs-check.mjs --json
 ```
 
 Use the direct `node` form when you need exact flags. `pnpm doctor` is pnpm's built-in command; use
