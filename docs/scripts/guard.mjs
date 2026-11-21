@@ -1,5 +1,15 @@
 import path from 'node:path';
-import { emitJson, fileSize, git, isTestFile, readText, resolveBase } from './lib.mjs';
+import {
+  emitJson,
+  fileSize,
+  git,
+  isForbiddenLockfile,
+  isTestFile,
+  markdownPlacementIssue,
+  readText,
+  resolveBase,
+  testPlacementIssue,
+} from './lib.mjs';
 
 const jsonMode = process.argv.includes('--json');
 const stagedMode = process.argv.includes('--staged');
@@ -87,6 +97,18 @@ for (const file of collected.untracked) {
 const issues = [];
 for (const entry of collected.entries) {
   const file = entry.path;
+  if (entry.status.startsWith('D')) continue;
+  const placement = markdownPlacementIssue(file);
+  if (placement) {
+    issues.push({ type: 'markdown-placement', path: file, detail: placement });
+  }
+  if (isForbiddenLockfile(file)) {
+    issues.push({ type: 'lockfile', path: file, detail: 'only pnpm-lock.yaml is allowed' });
+  }
+  const testIssue = testPlacementIssue(file);
+  if (testIssue) {
+    issues.push({ type: 'test-placement', path: file, detail: testIssue });
+  }
   if (generatedPattern.test(file) && !isTestFile(file)) {
     issues.push({ type: 'generated', path: file, detail: 'generated path must not be committed' });
   }

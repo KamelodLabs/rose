@@ -182,6 +182,49 @@ export function isTestFile(file) {
   );
 }
 
+export function isMarkdown(file) {
+  return /\.mdx?$/i.test(file);
+}
+
+export function markdownPlacementIssue(file) {
+  const normalized = file.replace(/\\/g, '/');
+  if (!isMarkdown(normalized)) return null;
+  if (/(^|\/)CLAUDE\.md$/i.test(normalized)) {
+    return 'CLAUDE.md is not allowed; use the root AGENTS.md';
+  }
+  if (/(^|\/)AGENTS\.md$/i.test(normalized) && normalized !== 'AGENTS.md') {
+    return 'AGENTS.md is only allowed at the repository root';
+  }
+  if (normalized === 'AGENTS.md') return null;
+  if (/(^|\/)README\.md$/i.test(normalized)) return null;
+  if (normalized.startsWith('docs/')) return null;
+  if (normalized.startsWith('.github/')) return null;
+  if (
+    ['CHANGELOG.md', 'CONTRIBUTING.md', 'SECURITY.md', 'CODE_OF_CONDUCT.md'].includes(normalized)
+  ) {
+    return null;
+  }
+  return 'Markdown must live under docs/ or be a README/AGENTS/root policy file';
+}
+
+export function isForbiddenLockfile(file) {
+  return ['package-lock.json', 'yarn.lock', 'bun.lockb', 'npm-shrinkwrap.json'].includes(
+    path.basename(file),
+  );
+}
+
+export function testPlacementIssue(file) {
+  const normalized = file.replace(/\\/g, '/');
+  if (/(^|\/)__tests__\//.test(normalized) || normalized.startsWith('e2e/')) return null;
+  if (/\.(test|spec)\.[jt]sx?$/i.test(normalized)) {
+    return 'JS/TS tests must live under __tests__/ (or e2e/)';
+  }
+  if (/_test\.go$/.test(normalized) && !normalized.startsWith('apiRose/')) {
+    return 'Go tests must live under apiRose/';
+  }
+  return null;
+}
+
 export function fileSize(relativePath) {
   try {
     return statSync(path.join(root, relativePath)).size;
