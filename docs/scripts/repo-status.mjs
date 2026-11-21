@@ -69,6 +69,8 @@ if (dirty.length > 0) {
   next = `Inspect the failing checks: node docs/scripts/ci-inspect.mjs ${pr.number}`;
 } else if (pr && pending.length > 0) {
   next = `Wait for checks on PR #${pr.number}.`;
+} else if (pr && checks.length === 0) {
+  next = `Wait for checks to appear on PR #${pr.number}.`;
 } else if (pr) {
   next = `PR #${pr.number} is green; merge when ready.`;
 } else if (!['dev', 'staging', 'main'].includes(branch)) {
