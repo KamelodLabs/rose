@@ -62,8 +62,8 @@ function sleepSync(milliseconds) {
   Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, milliseconds);
 }
 
-function waitForChecks(number) {
-  for (let attempt = 0; attempt < 60; attempt += 1) {
+function waitForChecks(number, say) {
+  for (let attempt = 0; attempt < 120; attempt += 1) {
     const view = gh(['pr', 'view', String(number), '--json', 'statusCheckRollup']);
     if (view.ok) {
       try {
@@ -73,9 +73,12 @@ function waitForChecks(number) {
         // Keep polling while the host registers the checks.
       }
     }
+    if (attempt > 0 && attempt % 6 === 0) {
+      say?.(`Still waiting for checks on PR #${number}...`);
+    }
     sleepSync(5000);
   }
-  throw new Error(`no checks appeared for PR #${number} within 300s`);
+  throw new Error(`no checks appeared for PR #${number} within 600s`);
 }
 
 function planFor(name) {
@@ -212,7 +215,7 @@ function execute(name, jsonMode) {
 
     stage = 'staging-checks';
     say(`Waiting for checks on PR #${stagingNumber}...`);
-    waitForChecks(stagingNumber);
+    waitForChecks(stagingNumber, say);
     const stagingChecks = gh(['pr', 'checks', String(stagingNumber), '--watch', '--fail-fast']);
     if (stagingChecks) say(stagingChecks);
 
@@ -254,7 +257,7 @@ function execute(name, jsonMode) {
 
     stage = 'main-checks';
     say(`Waiting for checks on PR #${mainNumber}...`);
-    waitForChecks(mainNumber);
+    waitForChecks(mainNumber, say);
     const mainChecks = gh(['pr', 'checks', String(mainNumber), '--watch', '--fail-fast']);
     if (mainChecks) say(mainChecks);
 
