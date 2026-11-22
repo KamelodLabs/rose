@@ -164,6 +164,10 @@ export function isAlive(pid) {
   }
 }
 
+export function sleepSync(milliseconds) {
+  Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, milliseconds);
+}
+
 export function portIsFree(port) {
   return new Promise((resolve) => {
     const server = net.createServer();

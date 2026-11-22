@@ -18,7 +18,7 @@ pnpm check-types        # tsc + go vet
 pnpm quality            # jscpd + knip
 pnpm doctor:repo        # toolchain, ports, metadata, git state (pnpm doctor is pnpm's built-in)
 pnpm clean              # dry-run; node docs/scripts/clean.mjs --yes deletes caches
-pnpm promote <name>     # dry-run; node docs/scripts/promote.mjs <name> --yes promotes
+pnpm promote <name>     # dry-run; --yes promotes, pauses for review (status: promote:status)
 ```
 
 Agent-friendly JSON (prefer these over parsing human output):
@@ -38,7 +38,10 @@ More utilities:
 pnpm repo:status         # branch, diff, services, PR and checks
 pnpm review:prep         # self-review before commit
 pnpm ci:inspect [pr]     # failing checks and logs
+pnpm ci:watch [pr]       # watch checks; no static timeout
 pnpm pr:open             # dry-run; --yes pushes and opens a PR to dev
+pnpm pr:review [pr]      # review summary or --approve/--comment/--request-changes
+pnpm pr:merge [pr]       # review-gated merge; dry-run unless --yes
 pnpm affected            # changed packages + suggested commands
 pnpm guard               # secrets, generated files and large files
 pnpm worktree:new <name> # isolated worktree under ../rose-worktrees
@@ -108,7 +111,8 @@ service's `pid`, `port`, `url`, `health`, `log` and `status`, plus logs in `.dev
 - Branch from `dev`: `feat/*`, `fix/*`, `chore/*`. Commit messages use conventional commits (`feat`, `fix`, `docs`, `style`, `refactor`, `perf`, `test`, `build`, `ci`, `chore`, `revert`).
 - Hooks: `pre-commit` runs Prettier on staged files; `commit-msg` runs commitlint. `--no-verify` is a
   local escape hatch, not a workflow.
-- PRs target `dev` and are squash-merged. Before opening: `pnpm verify`.
+- PRs target `dev` and are squash-merged. Every PR requires review; before opening: `pnpm verify`.
+- A non-author approval is required. Maintainers may self-review with `--self-reviewed`; `promote` pauses at each review gate and resumes with `--resume` (add `--self-reviewed` after self-review). Branch protection on `dev` is the real enforcement.
 - Promotions `dev -> staging -> main` go through `node docs/scripts/promote.mjs <name> --yes` (or the documented `promote/<name>` hybrid branch). **Never** push or merge directly to `dev`, `staging` or `main`.
 - **Never** force-push, rewrite history, or bypass branch protection. Check with
   `gh pr checks <n> --watch --fail-fast`.
