@@ -51,6 +51,25 @@ Expected: `{"status":"ok"}`.
 `build` writes `bin/server.exe` because this repo is Windows-first. On Linux/macOS change the script in
 `apiRose/package.json` to `go build -o bin/server ./cmd/server`.
 
+## Container image
+
+`apiRose/Dockerfile` cross-compiles a static binary on `golang:1.26.7-alpine` and runs it on
+`gcr.io/distroless/static-debian12:nonroot`. The runtime image has no shell or package manager; it
+provides CA certificates, tzdata, `/tmp`, and the non-root `nonroot` user. The server listens on
+`PORT` (default `8080`) and runs as `/app/server`.
+
+The binary is also its own health probe. Started as `/app/server -healthcheck`, it sends one
+`GET http://127.0.0.1:$PORT/health` with a 2s timeout and exits `0` for any 2xx status, `1`
+otherwise; the server does not start in this mode. Both Compose files use
+`['CMD', '/app/server', '-healthcheck']`, which works without a shell.
+
+Debugging a shell-less container:
+
+- Rebuild from the `:debug` variant of the same distroless tag; it adds a BusyBox shell.
+- Or attach an ephemeral container to the running one. With Docker Desktop: `docker debug <container>`.
+  Otherwise:
+  `docker run --rm -it --pid=container:<container> --network=container:<container> debian:bookworm-slim sh`.
+
 ## Tests and complexity
 
 `pnpm --filter @rose/apiRose test` runs `go test ./...`. CI runs `go test -race ./...` instead: the
