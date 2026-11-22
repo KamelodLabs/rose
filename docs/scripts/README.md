@@ -164,10 +164,11 @@ or another maintainer to approve their own PRs.
   commit, and a new `vX.Y.Z` tag.
 - `clean` refuses to run while `.dev/services.json` has live PIDs. Run `pnpm dev:stop` first.
 - `promote --yes` verifies a clean tree on `dev`, requires `gh` authentication, fetches `origin`,
-  refuses an empty `origin/main..origin/dev`, and pauses at each review gate. Resume with
+  bases the staging PR on `origin/staging`, refuses an empty `origin/staging..origin/dev`, and
+  pauses at each review gate. Resume with
   `--resume`; maintainers may add `--self-reviewed` after reviewing. It never force-pushes, never
   pushes to a protected branch, and never uses `--auto` or `--admin`.
-- `pr:merge --yes` requires the review gate, watches checks without a static timeout, re-fetches the
+- `pr:merge --yes` requires the review gate, waits for checks to register with backoff (no static timeout), re-fetches the
   PR, and then merges with an explicit strategy. `--self-reviewed` requires `ADMIN`/`MAINTAIN`.
 - `sync --yes` only fast-forwards branches with no unique commits; it never force-pushes or rewrites
   history.
