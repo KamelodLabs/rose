@@ -73,7 +73,7 @@ const scripts = Object.values(packageJson?.scripts ?? {}).filter(
 );
 const scriptText = scripts.join('\n');
 const scriptsDir = path.join(root, 'docs', 'scripts');
-const internalScripts = new Set(['lib.mjs', 'run-service.mjs']);
+const internalScripts = new Set(['lib.mjs', 'pr-lib.mjs', 'run-service.mjs']);
 const scriptsReadme = readText('docs/scripts/README.md') ?? '';
 if (existsSync(scriptsDir)) {
   for (const entry of readdirSync(scriptsDir)) {
