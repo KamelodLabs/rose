@@ -249,15 +249,15 @@ function freshRun(name, context, result, say, jsonMode) {
     throw new Error('promotion already in progress; use --resume');
   }
 
-  const count = Number(git(['rev-list', '--count', 'origin/main..origin/dev']).stdout);
+  const count = Number(git(['rev-list', '--count', 'origin/staging..origin/dev']).stdout);
   if (!Number.isInteger(count) || count <= 0) {
-    throw new Error('nothing to promote: origin/main..origin/dev is empty');
+    throw new Error('nothing to promote: origin/staging..origin/dev is empty');
   }
 
   const branch = `promote/${name}`;
   result.stage = 'branch';
-  say(`Creating ${branch} from origin/main...`);
-  check(git(['switch', '-C', branch, 'origin/main']), 'git switch failed');
+  say(`Creating ${branch} from origin/staging...`);
+  check(git(['switch', '-C', branch, 'origin/staging']), 'git switch failed');
   say(`Merging origin/dev into ${branch}...`);
   check(
     git(['merge', '--no-ff', 'origin/dev', '-m', `chore: promote ${name}`]),
@@ -268,7 +268,7 @@ function freshRun(name, context, result, say, jsonMode) {
 
   result.stage = 'staging-pr';
   say('Opening the staging pull request...');
-  const body = repositoryBody('origin/main', 'origin/dev', `chore: promote ${name} to staging`);
+  const body = repositoryBody('origin/staging', 'origin/dev', `chore: promote ${name} to staging`);
   const created = createPr({
     base: 'staging',
     head: branch,
@@ -464,7 +464,7 @@ function dryRun(name, flags, jsonMode) {
     return 1;
   }
 
-  const log = git(['log', '--oneline', '--no-decorate', 'origin/main..origin/dev']);
+  const log = git(['log', '--oneline', '--no-decorate', 'origin/staging..origin/dev']);
   result.commits = log.ok ? log.stdout.split(/\r?\n/).filter(Boolean) : [];
   const selfFlag = flags['self-reviewed'] ? ' --self-reviewed' : '';
 
@@ -473,7 +473,7 @@ function dryRun(name, flags, jsonMode) {
     result.next = result.nothingToPromote ? null : `pnpm promote ${name} --yes`;
     result.plan = {
       branch: `promote/${name}`,
-      base: 'origin/main',
+      base: 'origin/staging',
       merge: { from: 'origin/dev', mode: '--no-ff', message: `chore: promote ${name}` },
       prs: [
         {
