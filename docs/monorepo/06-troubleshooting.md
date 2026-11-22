@@ -184,15 +184,15 @@ lockfile immediately.
 
 ## Things that are intentional
 
-| Behavior                                     | Why                                                            |
-| -------------------------------------------- | -------------------------------------------------------------- |
-| `mobileRose` has no `build` script           | Native builds go through EAS                                   |
-| `apiRose` has no `start` script              | The binary is run directly or through `go run`                 |
-| Root has no ESLint config                    | `eslint-config-next` and `eslint-config-expo` are incompatible |
-| No pnpm catalogs for React/Expo              | Expo requires exact, SDK-matched versions                      |
-| `apiRose` has a `package.json`               | It is the Turborepo bridge to Go commands                      |
-| `nodeLinker: hoisted`                        | Required for a predictable Expo/Metro setup on pnpm            |
-| `packages/*` listed but the folder is absent | Reserved for future shared code                                |
+| Behavior                           | Why                                                            |
+| ---------------------------------- | -------------------------------------------------------------- |
+| `mobileRose` has no `build` script | Native builds go through EAS                                   |
+| `apiRose` has no `start` script    | The binary is run directly or through `go run`                 |
+| Root has no ESLint config          | `eslint-config-next` and `eslint-config-expo` are incompatible |
+| No pnpm catalogs for React/Expo    | Expo requires exact, SDK-matched versions                      |
+| `apiRose` has a `package.json`     | It is the Turborepo bridge to Go commands                      |
+| `nodeLinker: hoisted`              | Required for a predictable Expo/Metro setup on pnpm            |
+| `packages/*` holds only a README   | Reserved for real cross-app packages with 2+ consumers         |
 
 ## Checklist
 

@@ -1,8 +1,8 @@
 import { execFileSync, spawn } from 'node:child_process';
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
-import net from 'node:net';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { isAlive, parseCliResult, portIsFree } from './lib.mjs';
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', '..');
 const stateDir = path.join(root, '.dev');
@@ -102,25 +102,6 @@ function markMobileMetadataStopped() {
   } catch {
     // Metadata is best-effort state; stopping services must not fail because of it.
   }
-}
-
-function isAlive(pid) {
-  if (!Number.isInteger(pid) || pid <= 0) return false;
-  try {
-    process.kill(pid, 0);
-    return true;
-  } catch (error) {
-    return error.code === 'EPERM';
-  }
-}
-
-function portIsFree(port) {
-  return new Promise((resolve) => {
-    const server = net.createServer();
-    server.unref();
-    server.once('error', () => resolve(false));
-    server.listen({ port }, () => server.close(() => resolve(true)));
-  });
 }
 
 async function findFreePort(start) {
@@ -475,19 +456,8 @@ function logs(serviceName, flags) {
 }
 
 async function main() {
-  let parsed;
-  try {
-    parsed = parseArgs(process.argv.slice(2));
-  } catch (error) {
-    process.stderr.write(`${error.message}\n\n${usage}\n`);
-    return 1;
-  }
-
-  if (parsed.flags.help) {
-    const stream = parsed.flags.json ? process.stderr : process.stdout;
-    stream.write(`${usage}\n`);
-    return 0;
-  }
+  const { parsed, code } = parseCliResult(usage, parseArgs);
+  if (code !== null) return code;
   if (!parsed.command) {
     process.stderr.write(`${usage}\n`);
     return 1;
