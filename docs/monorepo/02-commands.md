@@ -81,7 +81,8 @@ Use the direct `node` form when you need exact flags. `pnpm doctor` is pnpm's bu
 ## Review and merge
 
 Every PR requires review before merge. No script uses `gh pr merge --auto`, and checks are watched
-with `gh pr checks --watch --fail-fast` without a static timeout.
+with `gh pr checks --watch --fail-fast` without a static timeout; it waits for checks to register with
+backoff.
 
 ```powershell
 pnpm pr:review 37                    # read-only summary and checklist
