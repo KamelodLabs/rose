@@ -1,5 +1,5 @@
 import { spawnSync } from 'node:child_process';
-import { firstLine, gh, root } from './lib.mjs';
+import { firstLine, gh, root, sleepSync } from './lib.mjs';
 
 export const PR_FIELDS = [
   'number',
@@ -168,6 +168,28 @@ export function findPromotion(name) {
 }
 
 export function runChecks(selector, { interval, quiet = false } = {}) {
+  let attempt = 0;
+  for (;;) {
+    const view = gh(['pr', 'view', String(selector), '--json', 'statusCheckRollup']);
+    if (!view.ok) {
+      throw new Error(
+        `gh pr view ${selector} failed: ${firstLine(view.stderr || view.stdout) || 'unknown error'}`,
+      );
+    }
+    let rollup = [];
+    try {
+      rollup = JSON.parse(view.stdout).statusCheckRollup ?? [];
+    } catch {
+      rollup = [];
+    }
+    if (Array.isArray(rollup) && rollup.length > 0) break;
+    attempt += 1;
+    if (attempt === 1 || attempt % 6 === 0) {
+      process.stderr.write(`waiting for checks to appear on PR #${selector}...\n`);
+    }
+    sleepSync(Math.min(30_000, 2_000 * 2 ** Math.min(attempt, 4)));
+  }
+
   const args = ['pr', 'checks', String(selector), '--watch', '--fail-fast'];
   if (interval) args.push('--interval', String(interval));
   const result = spawnSync('gh', args, {
