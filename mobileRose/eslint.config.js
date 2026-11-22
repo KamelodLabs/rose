@@ -2,6 +2,7 @@
 const { defineConfig } = require('eslint/config');
 const expoConfig = require('eslint-config-expo/flat');
 const complexity = require('../eslint.complexity.cjs');
+const modularity = require('../eslint.modularity.cjs');
 
 module.exports = defineConfig([
   expoConfig,
@@ -18,9 +19,10 @@ module.exports = defineConfig([
     rules: complexity.testRules,
   },
   {
-    files: ['src/hooks/use-color-scheme.web.ts'],
+    files: ['src/shared/theme/use-color-scheme.web.ts'],
     rules: {
       'react-hooks/set-state-in-effect': 'off',
     },
   },
+  ...modularity,
 ]);

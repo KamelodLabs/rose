@@ -1,21 +1,11 @@
 import path from 'node:path';
-import { emitJson, parseArgs, root, run, runPnpm } from './lib.mjs';
+import { emitJson, parseCli, root, run, runPnpm } from './lib.mjs';
 
 const usage = `Usage: node docs/scripts/deps-check.mjs [--json]
 
 Read-only: reports outdated pnpm, Expo and Go dependencies. It never updates anything.`;
 
-let parsed;
-try {
-  parsed = parseArgs(process.argv.slice(2), { flags: ['help', 'json'] });
-} catch (error) {
-  process.stderr.write(`${error.message}\n\n${usage}\n`);
-  process.exit(1);
-}
-if (parsed.flags.help) {
-  process.stdout.write(`${usage}\n`);
-  process.exit();
-}
+const parsed = parseCli(usage);
 
 const pnpm = runPnpm(['outdated', '--format', 'json'], { timeout: 180_000 });
 let pnpmOutdated = null;
