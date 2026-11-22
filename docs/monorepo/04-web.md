@@ -30,13 +30,29 @@ pnpm exec turbo run build --filter=@rose/webRose
 | `src/app/page.tsx`    | `/` route                                                                                                         |
 | `src/app/globals.css` | Tailwind entrypoint                                                                                               |
 | `src/app/**`          | `page.tsx` and `route.ts` create routes; `layout.tsx` wraps them. `globals.css` and static assets are not routes. |
-| `src/__tests__/`      | Vitest tests                                                                                                      |
+| `src/features/`       | business capabilities (app-local modules); see below                                                              |
+| `src/shared/`         | reusable app code: `ui`, `lib`, `hooks`, `types`, `config`                                                        |
+| `src/__tests__/`      | app-level Vitest tests                                                                                            |
 | `public/`             | static assets                                                                                                     |
 | `next.config.ts`      | standalone output, cache components, Tailwind                                                                     |
 | `vitest.config.mts`   | jsdom, `@` alias, test include                                                                                    |
 | `tsconfig.json`       | extends `../tsconfig.base.json`                                                                                   |
 
 Alias: `@/*` resolves to `webRose/src/*`.
+
+## Modules
+
+- Business code lives in `src/features/<feature>`. A feature exposes its public API from `index.ts`
+  and may contain `api/`, `components/`, `hooks/`, `model/`, `lib/`, and `__tests__/` as needed.
+- Reusable primitives go in `src/shared/ui`; third-party adapters in `src/shared/lib`; generic hooks
+  in `src/shared/hooks`; cross-feature types in `src/shared/types`; app-wide configuration in
+  `src/shared/config`.
+- `src/app` is the composition root: routes, layouts, providers, and thin wiring.
+- Import features only through `@/features/<feature>`; no deep imports.
+- `shared` must not import `features` or `app`; a feature must not import another feature.
+- Small features collapse layers. Never create empty folders or a `package.json` inside `src`.
+
+Full standard: [09-modularization.md](./09-modularization.md). Run `pnpm modularity`.
 
 ## Commands
 
@@ -94,6 +110,7 @@ It is served at `/dashboard`. Add `layout.tsx` in the same folder to scope a lay
 - [ ] `pnpm --filter @rose/webRose test` passes.
 - [ ] `pnpm exec turbo run build --filter=@rose/webRose` succeeds.
 - [ ] New client components have `'use client'` at the top.
+- [ ] `pnpm modularity` passes and features are imported only through their public index.
 
 ## Next step
 

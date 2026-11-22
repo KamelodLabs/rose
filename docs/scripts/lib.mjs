@@ -1,5 +1,6 @@
 import { execFileSync, spawn } from 'node:child_process';
 import { existsSync, readFileSync, statSync, writeFileSync } from 'node:fs';
+import net from 'node:net';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
@@ -103,6 +104,37 @@ export function parseArgs(argv, { flags = [], values = [] } = {}) {
   return result;
 }
 
+export function parseCli(usage, { flags = ['help', 'json'] } = {}) {
+  let parsed;
+  try {
+    parsed = parseArgs(process.argv.slice(2), { flags });
+  } catch (error) {
+    process.stderr.write(`${error.message}\n\n${usage}\n`);
+    process.exit(1);
+  }
+  if (parsed.flags.help) {
+    process.stdout.write(`${usage}\n`);
+    process.exit();
+  }
+  return parsed;
+}
+
+export function parseCliResult(usage, parser) {
+  let parsed;
+  try {
+    parsed = parser(process.argv.slice(2));
+  } catch (error) {
+    process.stderr.write(`${error.message}\n\n${usage}\n`);
+    return { parsed: null, code: 1 };
+  }
+  if (parsed.flags.help) {
+    const stream = parsed.flags.json ? process.stderr : process.stdout;
+    stream.write(`${usage}\n`);
+    return { parsed: null, code: 0 };
+  }
+  return { parsed, code: null };
+}
+
 export function emitJson(value) {
   process.stdout.write(`${JSON.stringify(value, null, 2)}\n`);
 }
@@ -130,6 +162,15 @@ export function isAlive(pid) {
   } catch (error) {
     return error.code === 'EPERM';
   }
+}
+
+export function portIsFree(port) {
+  return new Promise((resolve) => {
+    const server = net.createServer();
+    server.unref();
+    server.once('error', () => resolve(false));
+    server.listen({ port }, () => server.close(() => resolve(true)));
+  });
 }
 
 export function resolveBase(base = 'origin/dev') {

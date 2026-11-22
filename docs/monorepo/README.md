@@ -11,11 +11,13 @@ workspace is wired and how to use it end to end without guessing.
    8081; the wrapper picks the next free port and writes the URL to `mobileRose/.expo/rose-dev.json`).
 3. `pnpm test` runs Vitest (web), Jest (mobile), and `go test` (API).
 4. `pnpm quality` runs the duplication and unused-code gates.
-5. `pnpm verify` runs the full gate: format, lint, types, tests, quality, and build.
-6. For background services (agents): `pnpm dev:start`, then `pnpm dev:status`; stop with `pnpm dev:stop`.
-7. Verify: API `http://localhost:8080/health`, web `http://localhost:3000`, Expo on the `expoGoUrl`
+5. `pnpm modularity` enforces the module boundaries in
+   [09-modularization.md](./09-modularization.md).
+6. `pnpm verify` runs the full gate: format, lint, types, tests, quality, modularity, docs, and build.
+7. For background services (agents): `pnpm dev:start`, then `pnpm dev:status`; stop with `pnpm dev:stop`.
+8. Verify: API `http://localhost:8080/health`, web `http://localhost:3000`, Expo on the `expoGoUrl`
    from `mobileRose/.expo/rose-dev.json` (port 8081 by default).
-8. Mobile only (without the rest of the stack): `pnpm --filter @rose/mobileRose start`.
+9. Mobile only (without the rest of the stack): `pnpm --filter @rose/mobileRose start`.
 
 The mobile `start`/`dev` scripts are agent-friendly: they print `[rose-mobile]` lines and write
 `mobileRose/.expo/rose-dev.json` plus `.expo/expo-go-qr.png`. Agents should relay the `expoGoUrl` from
@@ -25,12 +27,12 @@ For agent-driven work, read `AGENTS.md` first; it is the single instruction file
 
 ## What is inside
 
-| Path          | Project             | Stack                                       | Package            |
-| ------------- | ------------------- | ------------------------------------------- | ------------------ |
-| `apiRose/`    | HTTP API            | Go 1.26, `net/http` stdlib                  | `@rose/apiRose`    |
-| `webRose/`    | Web app             | Next.js 16, React 19, Tailwind 4            | `@rose/webRose`    |
-| `mobileRose/` | Mobile app          | Expo SDK 58, expo-router, React Native 0.88 | `@rose/mobileRose` |
-| `packages/*`  | Shared code (later) | TypeScript                                  | reserved glob      |
+| Path          | Project            | Stack                                       | Package            |
+| ------------- | ------------------ | ------------------------------------------- | ------------------ |
+| `apiRose/`    | HTTP API           | Go 1.26, `net/http` stdlib                  | `@rose/apiRose`    |
+| `webRose/`    | Web app            | Next.js 16, React 19, Tailwind 4            | `@rose/webRose`    |
+| `mobileRose/` | Mobile app         | Expo SDK 58, expo-router, React Native 0.88 | `@rose/mobileRose` |
+| `packages/*`  | Cross-app packages | TypeScript                                  | real packages only |
 
 ## Documentation map
 
@@ -44,12 +46,15 @@ For agent-driven work, read `AGENTS.md` first; it is the single instruction file
 | [06-troubleshooting.md](./06-troubleshooting.md) | Fix a broken install, hook, test, quality gate, port, or cache |
 | [07-branching.md](./07-branching.md)             | Understand `dev` -> `staging` -> `main` and releases           |
 | [08-deployment.md](./08-deployment.md)           | Run the stack as containers and move it to any host            |
+| [09-modularization.md](./09-modularization.md)   | Place code and enforce module boundaries (normative)           |
 
 ## Ground rules
 
 - **Install from the root only.** One lockfile (`pnpm-lock.yaml`), one `node_modules` layout.
 - **Add dependencies with a filter** so they land in the right `package.json`.
 - **Never edit `node_modules` or the lockfile by hand.**
+- **Follow [09-modularization.md](./09-modularization.md).** New code goes into `features`/`shared`,
+  not into new technical layers; run `pnpm modularity`.
 - **Node >= 22 and pnpm 10.33.4** are pinned in `package.json` (`engines`, `packageManager`). `.npmrc`
   (`engine-strict=true`) enforces the Node engine, while pnpm is selected via `packageManager`.
 - **Windows first:** the API build emits `bin/server.exe`. See [03-api.md](./03-api.md) to port it.
