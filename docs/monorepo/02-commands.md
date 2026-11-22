@@ -48,7 +48,11 @@ the root.
 | `pnpm dev:logs`            | Tail a service log (`.dev/logs/`)                                          | all       |
 | `pnpm doctor:repo`         | Toolchain, ports, metadata and git diagnosis                               | repo      |
 | `pnpm clean`               | Dry-run generated caches; `--yes` deletes                                  | repo      |
-| `pnpm promote <name>`      | Dry-run promotion; `--yes` executes it                                     | repo      |
+| `pnpm promote <name>`      | Dry-run promotion; pauses at review; `--yes` executes                      | repo      |
+| `pnpm promote:status`      | Read-only staging/main PR, checks, and review status                       | repo      |
+| `pnpm pr:review [pr]`      | Read-only review summary, or submit a review with an action                | repo      |
+| `pnpm pr:merge [pr]`       | Dry-run merge plan; `--yes` enforces review and watches checks             | repo      |
+| `pnpm ci:watch [pr]`       | Live `gh pr checks --watch --fail-fast`; no static timeout                 | repo      |
 | `pnpm docs:check`          | Links, Markdown placement, AGENTS, lockfile, tests                         | repo      |
 | `pnpm format`              | Prettier write over the repo                                               | all files |
 | `pnpm format:check`        | Prettier check (CI-friendly)                                               | all files |
@@ -73,6 +77,36 @@ when a boundary is violated.
 
 Use the direct `node` form when you need exact flags. `pnpm doctor` is pnpm's built-in command; use
 `pnpm doctor:repo` or `node docs/scripts/doctor.mjs`.
+
+## Review and merge
+
+Every PR requires review before merge. No script uses `gh pr merge --auto`, and checks are watched
+with `gh pr checks --watch --fail-fast` without a static timeout.
+
+```powershell
+pnpm pr:review 37                    # read-only summary and checklist
+pnpm pr:review 37 -- --approve -b "Looks good"
+pnpm pr:merge 37                     # dry run with blockers and next step
+pnpm ci:watch 37                     # live check output
+pnpm pr:merge 37 --yes               # re-checks the review gate, then merges
+```
+
+A non-author approval satisfies the gate. Maintainers may review their own PR, then use
+`pnpm pr:merge <n> --yes --self-reviewed`. Branch protection on `dev` (and `staging`/`main`) should
+require at least one approval; the scripts are a local guard, not a replacement. Admins may need a
+bypass policy or another maintainer for their own PRs.
+
+Promotions pause at both review gates. After reviewing, resume:
+
+```powershell
+pnpm promote release-1 --yes
+pnpm promote:status release-1
+pnpm pr:review 60 -- --approve -b "Promotion reviewed"
+pnpm promote release-1 --resume --yes
+```
+
+Maintainers can use `--resume --yes --self-reviewed` after reviewing their own staging PR. The newly
+created main PR always pauses for review, even in the same run.
 
 ## Filtering
 
