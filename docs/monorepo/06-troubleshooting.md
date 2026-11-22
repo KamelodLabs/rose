@@ -30,6 +30,8 @@ sections.
 | Expo Go shows a version mismatch                 | App SDK and Expo Go client differ                                                                                     | Update Expo Go, or build a dev client                                                           |
 | Phone cannot reach Expo Go                       | Wrong host, virtual adapter, firewall, or SDK mismatch                                                                | See [Phone cannot connect to Expo Go](#phone-cannot-connect-to-expo-go)                         |
 | `ERR_PNPM_OUTDATED_LOCKFILE` in CI               | `package.json` changed without committing lockfile                                                                    | Run `pnpm install` locally and commit `pnpm-lock.yaml`                                          |
+| Healthcheck fails after the distroless switch    | The runtime image has no shell, `wget`, or `curl`                                                                     | Use the compiled probe, e.g. `/app/server -healthcheck`, or an exec-form command                |
+| `docker exec ... sh` says executable not found   | Distroless images ship no shell                                                                                       | Use `docker debug`, a `:debug` image, or an ephemeral container (see below)                     |
 
 ## Free a port
 
@@ -81,6 +83,21 @@ Work through this checklist in order; most failures are the wrong host or a bloc
    printed in the terminal and is not written to `rose-dev.json`.
 8. **QR visibility and CI.** The QR only renders in an interactive Expo terminal. Press `E` to reprint
    it; `CI=1` disables it. If nobody sees the terminal, relay `expoGoUrl` instead of the QR.
+
+## Distroless containers
+
+The API and web runtime images are distroless: no shell, no `wget`, no `curl`. That is intentional
+and is why `docker exec -it <container> sh` fails with an "executable file not found" error.
+
+- API health: `docker exec <container> /app/server -healthcheck`; it prints nothing and returns the
+  same exit code as the container healthcheck (0 healthy, 1 not).
+- Web health: the image healthcheck is a Node `fetch` one-liner; check it with
+  `docker inspect --format '{{json .State.Health}}' <container>`.
+- Interactive shell: open an ephemeral container in the target's namespaces:
+  `docker run --rm -it --pid=container:<container> --network=container:<container> debian:bookworm-slim sh`.
+  Docker Desktop also provides `docker debug <container>`.
+- If you need a shell inside the image itself, rebuild locally from the matching `:debug` distroless
+  tag (for example `gcr.io/distroless/static-debian12:debug`).
 
 ## Test failures
 

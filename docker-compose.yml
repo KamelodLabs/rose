@@ -11,12 +11,20 @@ services:
       context: ./apiRose
       dockerfile: Dockerfile
     image: rose/api:local
+    init: true
+    read_only: true
+    tmpfs:
+      - /tmp
+    cap_drop:
+      - ALL
+    security_opt:
+      - 'no-new-privileges:true'
     environment:
       PORT: 8080
     ports:
       - '${API_PORT:-8080}:8080'
     healthcheck:
-      test: ['CMD', 'wget', '-q', '-O', '-', 'http://127.0.0.1:8080/health']
+      test: ['CMD', '/app/server', '-healthcheck']
       interval: 10s
       timeout: 3s
       retries: 5
@@ -28,6 +36,11 @@ services:
       context: .
       dockerfile: webRose/Dockerfile
     image: rose/web:local
+    init: true
+    cap_drop:
+      - ALL
+    security_opt:
+      - 'no-new-privileges:true'
     environment:
       PORT: 3000
       HOSTNAME: 0.0.0.0
