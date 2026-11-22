@@ -67,6 +67,22 @@ Full standard: [09-modularization.md](./09-modularization.md). Run `pnpm modular
 | Test watch  | `pnpm --filter @rose/webRose test:watch`                                                                                                     |
 | Custom port | `pnpm --filter @rose/webRose exec next dev -p 3001`                                                                                          |
 
+## Container image
+
+`webRose/Dockerfile` builds from the repo root because the pnpm workspace and lockfile live there.
+The runtime is `gcr.io/distroless/nodejs24-debian12:nonroot`: no shell, no package manager, and the
+non-root `nonroot` user. Distroless Node's entrypoint is `/nodejs/bin/node`, so the Dockerfile only
+declares `CMD ["webRose/server.js"]`; `PORT` (3000) and `HOSTNAME` (0.0.0.0) are baked into the image.
+
+- **deps** copies the workspace manifests and runs a frozen, filtered `pnpm install` for
+  `@rose/webRose`, with a BuildKit cache mount for the pnpm store.
+- **builder** copies only `tsconfig.base.json`, `webRose/`, and `packages/` over that install and
+  runs `pnpm --filter @rose/webRose build` (standalone output).
+- **runner** copies `.next/standalone`, `.next/static`, and `public` with `COPY --link`.
+
+The image healthcheck is an exec-form Node `fetch` of `/` because the runtime has no shell. CI builds
+the image with `load: true` and smoke-tests `GET /` on host port 13000 before the job finishes.
+
 ## Testing
 
 Vitest + jsdom + Testing Library. `vitest.config.mts` sets `environment: 'jsdom'`, maps the `@` alias

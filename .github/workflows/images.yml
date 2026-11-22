@@ -39,8 +39,26 @@ jobs:
           context: .
           file: webRose/Dockerfile
           push: false
+          load: true
+          tags: rose/web:ci
           cache-from: type=gha,scope=web
           cache-to: type=gha,mode=max,scope=web
+
+      - name: Smoke test web image
+        run: |
+          docker run -d --name rose-web-ci -p 13000:3000 rose/web:ci
+          for attempt in $(seq 1 30); do
+            if curl -fsS -o /dev/null http://127.0.0.1:13000/; then
+              exit 0
+            fi
+            sleep 2
+          done
+          docker logs rose-web-ci
+          exit 1
+
+      - name: Remove web smoke container
+        if: always()
+        run: docker rm -f rose-web-ci || true
 
   api:
     name: api image
@@ -57,5 +75,23 @@ jobs:
           context: ./apiRose
           file: ./apiRose/Dockerfile
           push: false
+          load: true
+          tags: rose/api:ci
           cache-from: type=gha,scope=api
           cache-to: type=gha,mode=max,scope=api
+
+      - name: Smoke test api image
+        run: |
+          docker run -d --name rose-api-ci -p 18080:8080 rose/api:ci
+          for attempt in $(seq 1 30); do
+            if curl -fsS -o /dev/null http://127.0.0.1:18080/health; then
+              exit 0
+            fi
+            sleep 2
+          done
+          docker logs rose-api-ci
+          exit 1
+
+      - name: Remove api smoke container
+        if: always()
+        run: docker rm -f rose-api-ci || true

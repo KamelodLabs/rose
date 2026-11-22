@@ -37,21 +37,67 @@ Publishing host ports on the VPS is explicitly not recommended by Dokploy: it co
 apps and bypasses routing. Domains, TLS and labels live in Dokploy so nothing environment-specific
 ends up in git.
 
-## Web image build
+## Images
+
+Both images are multi-stage, non-root, and shell-less at runtime.
+
+| Image | Builder                 | Runtime                                       |
+| ----- | ----------------------- | --------------------------------------------- |
+| api   | `golang:1.26.7-alpine`  | `gcr.io/distroless/static-debian12:nonroot`   |
+| web   | `node:24-bookworm-slim` | `gcr.io/distroless/nodejs24-debian12:nonroot` |
+
+`apiRose/Dockerfile` cross-compiles a static binary for `TARGETOS`/`TARGETARCH`, downloads modules
+and builds with BuildKit cache mounts, and copies the binary with `COPY --link`. The distroless
+static runtime supplies CA certificates, tzdata, `/tmp`, and the `nonroot` user.
 
 `webRose/Dockerfile` builds from the repo root because the workspace and lockfile live there.
 
-1. **base** installs pnpm 10.33.4 and sets `ENV HUSKY=0`. `.dockerignore` excludes `.git`, so the root
-   `prepare` -> `husky` hook has no repository to install into; skipping it is required.
+1. **base** installs pnpm 10.33.4 with an npm cache mount and sets `ENV HUSKY=0`. `.dockerignore`
+   excludes `.git`, so the root `prepare` -> `husky` hook has no repository to install into;
+   skipping it is required.
 2. **deps** copies the root manifests (`package.json`, `pnpm-lock.yaml`, `pnpm-workspace.yaml`) plus
    `apiRose/package.json`, `webRose/package.json`, and `mobileRose/package.json`, then runs a frozen
-   filtered install. Every workspace manifest must exist for the lockfile to validate: keep this list
-   in sync when you add an app.
-3. **builder** copies the repo and runs `pnpm --filter @rose/webRose build`.
-4. **runner** copies `.next/standalone`, `.next/static`, and `public`, then starts `webRose/server.js`.
+   filtered install with a pnpm store cache mount. Every workspace manifest must exist for the
+   lockfile to validate: keep this list in sync when you add an app.
+3. **builder** copies only `tsconfig.base.json`, `webRose/`, and `packages/` over the deps stage and
+   runs `pnpm --filter @rose/webRose build`. This replaces `COPY . .`, so changes outside the web
+   build inputs do not invalidate the layer.
+4. **runner** copies `.next/standalone`, `.next/static`, and `public` with `COPY --link`, then starts
+   `webRose/server.js` through the distroless Node entrypoint.
 
-`.dockerignore` excludes `.git`, `.atl`, `.github`, `docs`, `node_modules`, build outputs, and most of
-`mobileRose`; only its `package.json` is needed for the workspace install.
+`.dockerignore` excludes `.git`, `.atl`, `.github`, `docs`, `node_modules`, build outputs, env files,
+local caches, and most of `mobileRose`; only its `package.json` is needed for the workspace install.
+
+## Hardening and healthchecks
+
+Compose applies runtime hardening to both services:
+
+| Service | Hardening                                                                                     |
+| ------- | --------------------------------------------------------------------------------------------- |
+| api     | `init: true`, `read_only: true`, `tmpfs: [/tmp]`, `cap_drop: [ALL]`, `no-new-privileges:true` |
+| web     | `init: true`, `cap_drop: [ALL]`, `no-new-privileges:true`                                     |
+
+The web root filesystem stays writable because Next may write caches; do not add `read_only`
+without a writable mount for its cache. `init: true` uses Docker's init process, so no Tini is baked
+into the images.
+
+Neither image has a shell, so healthchecks are exec-form and self-contained. The API runs
+`/app/server -healthcheck` (one HTTP GET with a 2s timeout, exit 0 only for 2xx) and the web image
+runs a Node `fetch` one-liner against `/`. Do not replace these with `wget`/`curl` shell probes:
+those binaries do not exist in the runtime images.
+
+### Debugging distroless containers
+
+```bash
+docker debug <container>                     # Docker Desktop
+docker run --rm -it --pid=container:<container> --network=container:<container> \
+  debian:bookworm-slim sh                    # any Docker host
+```
+
+Rebuilding from the matching `:debug` tag (for example
+`gcr.io/distroless/static-debian12:debug`) is the other option; it adds a shell to the same image.
+For the API, `docker exec <container> /app/server -healthcheck` reproduces the probe and returns its
+exit code.
 
 ## Configuration
 
@@ -102,8 +148,11 @@ the `external: true` flag.
 
 ## CI for images
 
-`.github/workflows/images.yml` builds both images with `cache-from/to: type=gha`. It runs on pull
-requests that touch:
+`.github/workflows/images.yml` builds both images with `cache-from/to: type=gha`, loads them into the
+runner (`load: true`, tags `rose/api:ci` and `rose/web:ci`), and smoke-tests them. The API must answer
+`GET /health` on host port 18080 and the web app must answer `GET /` on 13000 within 60 seconds;
+otherwise the job prints the container logs and fails. The smoke containers are removed with
+`if: always()`. It runs on pull requests that touch:
 
 - `.dockerignore`
 - `.github/workflows/images.yml`

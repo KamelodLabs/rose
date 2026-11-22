@@ -21,3 +21,15 @@ mobileRose/scripts
 mobileRose/.vscode
 mobileRose/ios
 mobileRose/android
+
+# Local secrets and local state never belong in the build context.
+.env
+.env.*
+**/.env
+**/.env.*
+!.env.example
+!**/.env.example
+.dev
+.cache
+coverage
+*.log

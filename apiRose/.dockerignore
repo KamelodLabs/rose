@@ -4,3 +4,12 @@ bin
 *.exe
 Dockerfile
 .dockerignore
+
+# Local secrets and local state never belong in the build context.
+.env
+.env.*
+!.env.example
+.dev
+.cache
+coverage
+*.log
