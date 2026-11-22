@@ -50,9 +50,20 @@ if (existing.ok) {
   try {
     const pr = JSON.parse(existing.stdout)[0];
     if (pr) {
-      const result = { ok: true, existing: true, number: pr.number, url: pr.url, branch, base };
+      const result = {
+        ok: true,
+        existing: true,
+        number: pr.number,
+        url: pr.url,
+        branch,
+        base,
+        next: `pnpm pr:review ${pr.number}`,
+      };
       if (jsonMode) emitJson(result);
-      else process.stdout.write(`PR already open: #${pr.number} ${pr.url}\n`);
+      else {
+        process.stdout.write(`PR already open: #${pr.number} ${pr.url}\n`);
+        process.stdout.write(`Next: pnpm pr:review ${pr.number}\n`);
+      }
       process.exit();
     }
   } catch {
@@ -95,6 +106,20 @@ if (parsed.flags.draft) args.push('--draft');
 const created = gh(args);
 if (!created.ok) fail(`gh pr create failed: ${created.stderr || created.stdout}`);
 
-const result = { ok: true, branch, base, title, url: created.stdout };
+const url = created.stdout.trim();
+const match = /\/pull\/(\d+)/.exec(url);
+const number = match ? Number(match[1]) : null;
+const result = {
+  ok: true,
+  branch,
+  base,
+  title,
+  url,
+  number,
+  next: number ? `pnpm pr:review ${number}` : 'pnpm pr:review',
+};
 if (jsonMode) emitJson(result);
-else process.stdout.write(`PR created: ${created.stdout}\n`);
+else {
+  process.stdout.write(`PR created: ${url}\n`);
+  process.stdout.write(`Next: ${result.next}\n`);
+}
