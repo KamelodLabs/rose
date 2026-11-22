@@ -1,28 +1,34 @@
-# syntax=docker/dockerfile:1
+# syntax=docker/dockerfile:1.7
 
-# Static binary, then a minimal runtime. No cloud-specific base image.
-FROM golang:1.26-alpine AS builder
+FROM --platform=$BUILDPLATFORM golang:1.26.7-alpine AS builder
+
+ARG TARGETOS=linux
+ARG TARGETARCH=amd64
 
 WORKDIR /src
 ENV CGO_ENABLED=0
+ENV GOTOOLCHAIN=local
 
-# go.* keeps the dependency layer valid once go.sum exists.
 COPY go.* ./
-RUN go mod download
+RUN --mount=type=cache,target=/go/pkg/mod \
+    --mount=type=cache,target=/root/.cache/go-build \
+    go mod download
 
 COPY . .
-RUN go build -trimpath -ldflags='-s -w' -o /out/server ./cmd/server
+RUN --mount=type=cache,target=/go/pkg/mod \
+    --mount=type=cache,target=/root/.cache/go-build \
+    GOOS=$TARGETOS GOARCH=$TARGETARCH \
+    go build -trimpath -buildvcs=false -ldflags='-s -w -buildid=' -o /out/server ./cmd/server
 
-FROM alpine:3.22 AS runtime
-
-RUN apk add --no-cache ca-certificates \
-    && adduser -D -H -u 10001 appuser
+FROM gcr.io/distroless/static-debian12:nonroot
 
 WORKDIR /app
-COPY --from=builder /out/server ./server
+COPY --link --from=builder --chown=65532:65532 /out/server ./server
 
-USER appuser
 ENV PORT=8080
+USER 65532:65532
 EXPOSE 8080
-
-CMD ["/app/server"]
+STOPSIGNAL SIGTERM
+HEALTHCHECK --interval=10s --timeout=3s --start-period=5s --retries=5 \
+  CMD ["/app/server", "-healthcheck"]
+ENTRYPOINT ["/app/server"]
