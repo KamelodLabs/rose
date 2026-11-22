@@ -1,8 +1,8 @@
 import { execFileSync } from 'node:child_process';
 import { existsSync, readFileSync } from 'node:fs';
-import net from 'node:net';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { isAlive, portIsFree } from './lib.mjs';
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', '..');
 const jsonMode = process.argv.includes('--json');
@@ -64,25 +64,6 @@ function run(command, args) {
 function runPnpm(args) {
   if (process.platform !== 'win32') return run('pnpm', args);
   return run(process.env.ComSpec || 'cmd.exe', ['/d', '/s', '/c', ['pnpm', ...args].join(' ')]);
-}
-
-function portIsFree(port) {
-  return new Promise((resolve) => {
-    const server = net.createServer();
-    server.unref();
-    server.once('error', () => resolve(false));
-    server.listen({ port }, () => server.close(() => resolve(true)));
-  });
-}
-
-function isAlive(pid) {
-  if (!Number.isInteger(pid) || pid <= 0) return false;
-  try {
-    process.kill(pid, 0);
-    return true;
-  } catch (error) {
-    return error.code === 'EPERM';
-  }
 }
 
 function checkNode() {

@@ -1,6 +1,7 @@
 import { execFileSync } from 'node:child_process';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { parseCliResult } from './lib.mjs';
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', '..');
 
@@ -306,19 +307,8 @@ function execute(name, jsonMode) {
 }
 
 function main() {
-  let parsed;
-  try {
-    parsed = parseArgs(process.argv.slice(2));
-  } catch (error) {
-    process.stderr.write(`${error.message}\n\n${usage}\n`);
-    return 1;
-  }
-
-  if (parsed.flags.help) {
-    const stream = parsed.flags.json ? process.stderr : process.stdout;
-    stream.write(`${usage}\n`);
-    return 0;
-  }
+  const { parsed, code } = parseCliResult(usage, parseArgs);
+  if (code !== null) return code;
   if (!parsed.name) {
     process.stderr.write(`${usage}\n`);
     return 1;

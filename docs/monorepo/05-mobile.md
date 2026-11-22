@@ -73,21 +73,42 @@ Agents usually run the command and never see the terminal. Read `.expo/rose-dev.
 
 ## Layout
 
-| Path                  | Responsibility                                        |
-| --------------------- | ----------------------------------------------------- |
-| `src/app/_layout.tsx` | root navigator / providers                            |
-| `src/app/index.tsx`   | `/` screen                                            |
-| `src/app/explore.tsx` | `/explore` screen                                     |
-| `src/components/`     | shared UI; `.web.tsx` files are web-specific variants |
-| `src/hooks/`          | hooks; same platform-suffix convention                |
-| `src/constants/`      | theme tokens                                          |
-| `src/__tests__/`      | Jest + React Native Testing Library tests             |
-| `test/style-mock.js`  | CSS stub for Jest                                     |
-| `assets/images/`      | icons, splash                                         |
-| `app.json`            | app identity, plugins, experiments                    |
+| Path                  | Responsibility                                       |
+| --------------------- | ---------------------------------------------------- |
+| `src/app/_layout.tsx` | root navigator / providers (composition root)        |
+| `src/app/index.tsx`   | `/` screen                                           |
+| `src/app/explore.tsx` | `/explore` screen                                    |
+| `src/features/`       | business capabilities (app-local modules)            |
+| `src/shared/ui/`      | all reusable primitives and starter shell components |
+| `src/shared/theme/`   | theme tokens plus `use-theme` and color-scheme hooks |
+| `src/global.css`      | global styles                                        |
+| `test/style-mock.js`  | CSS stub for Jest                                    |
+| `assets/images/`      | icons, splash                                        |
+| `app.json`            | app identity, plugins, experiments                   |
 
-Platform-specific files: `animated-icon.tsx` + `animated-icon.web.tsx` resolve per platform
-automatically. Prefer that over `Platform.OS` branches for larger differences.
+`src/shared/ui` owns `themed-text`, `themed-view`, `hint-row`, `app-tabs`, `animated-icon`,
+`external-link`, `web-badge`, `collapsible`, and future primitives.
+
+Platform-specific files: `src/shared/ui/animated-icon.tsx` + `animated-icon.web.tsx` resolve per
+platform automatically. The same suffix convention applies to
+`src/shared/theme/use-color-scheme.web.ts`. Prefer platform files over `Platform.OS` branches for
+larger differences.
+
+## Modules
+
+- Business code lives in `src/features/<feature>` with a public `index.ts` (or `index.tsx`). It may
+  contain `api/`, `components/`, `hooks/`, `model/`, `lib/`, and `__tests__/` as needed.
+- Reusable primitives go in `src/shared/ui`; theme and color-scheme code goes in `src/shared/theme`;
+  adapters, generic hooks, and cross-feature types go in `src/shared/lib`, `src/shared/hooks`, and
+  `src/shared/types`.
+- `src/app` is the expo-router composition root. Keep screens thin; compose feature components there.
+- Import features only through `@/features/<feature>`; no deep imports.
+- `shared` must not import `features` or `app`; a feature must not import another feature.
+- Do not create technical-layer folders at the `src` root (`components/`, `hooks/`, `constants/`);
+  reusable code belongs in `src/shared/<area>`, product code in `src/features/<feature>`.
+- Small features collapse layers. Never create empty folders or a `package.json` inside `src`.
+
+Full standard: [09-modularization.md](./09-modularization.md). Run `pnpm modularity`.
 
 ## Scripts
 
@@ -119,7 +140,8 @@ Jest (`jest-expo` preset) plus React Native Testing Library.
 
 - `preset: "jest-expo"` lives in `mobileRose/package.json`.
 - `moduleNameMapper` maps `\.css$` to `test/style-mock.js` and `^@/(.*)$` to `<rootDir>/src/$1`.
-- `src/__tests__/themed-text.test.tsx` is the starter test.
+- `src/shared/ui/__tests__/themed-text.test.tsx` is the starter test; module tests live in the module's
+  `__tests__/` folder.
 - `mobileRose/tsconfig.json` sets `types: ["jest", "expo/types"]`, so Jest globals type-check without
   extra imports.
 
@@ -176,6 +198,7 @@ Only `EXPO_PUBLIC_*` variables are inlined into the app. Put them in `mobileRose
 - [ ] `pnpm --filter @rose/mobileRose test` passes.
 - [ ] `expo install` used for every Expo/native package.
 - [ ] No `node_modules` inside `mobileRose/`.
+- [ ] `pnpm modularity` passes and new primitives live in `src/shared/ui`.
 
 ## Next step
 

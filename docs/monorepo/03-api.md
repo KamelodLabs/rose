@@ -14,14 +14,16 @@ Expected: `{"status":"ok"}`.
 
 ## Layout
 
-| Path                             | Responsibility                                    |
-| -------------------------------- | ------------------------------------------------- |
-| `go.mod`                         | module `rose/apiRose`, Go 1.26                    |
-| `cmd/server/main.go`             | config, mux wiring, middleware, graceful shutdown |
-| `internal/health/health.go`      | `/health` handler                                 |
-| `internal/health/health_test.go` | table-driven tests for `/health`                  |
-| `internal/<domain>/`             | each new domain gets its own package              |
-| `bin/server.exe`                 | build output (gitignored)                         |
+| Path                             | Responsibility                                                  |
+| -------------------------------- | --------------------------------------------------------------- |
+| `go.mod`                         | module `rose/apiRose`, Go 1.26                                  |
+| `cmd/server/main.go`             | config, mux wiring, middleware, graceful shutdown (composition) |
+| `internal/health/health.go`      | `/health` handler                                               |
+| `internal/health/health_test.go` | table-driven tests for `/health`                                |
+| `internal/<domain>/`             | each new domain gets its own package                            |
+| `internal/platform/`             | reserved: config, logging, middleware, database, observability  |
+| `internal/README.md`             | domain/platform rules anchor                                    |
+| `bin/server.exe`                 | build output (gitignored)                                       |
 
 ## Behavior
 
@@ -86,6 +88,20 @@ mux.Handle("GET /greeting", greeting.Handler())
 
 3. Run `pnpm --filter @rose/apiRose check-types`, `test`, and `lint:complexity`.
 
+## Modules and boundaries
+
+The API is a modular monolith too:
+
+- `cmd/<binary>/` is the composition root. It builds dependencies and owns process concerns.
+- `internal/<domain>/` owns one business domain and exposes a small package API.
+- `internal/platform/` is infrastructure only. It must not import a domain; domains may import it.
+  `pnpm modularity` rejects domain imports from `platform`.
+- Cross-domain calls use exported domain APIs, never another domain's internals.
+- Do not add `packages/` to Go. `internal/` is compiler-enforced privacy.
+
+Full standard: [09-modularization.md](./09-modularization.md). Run `pnpm modularity` after structural
+changes.
+
 ## Conventions
 
 - Handlers live in `internal/<domain>/`, not in `main`.
@@ -101,6 +117,7 @@ mux.Handle("GET /greeting", greeting.Handler())
 - [ ] `go test -race ./...` passes in CI (and locally when cgo is available).
 - [ ] `GET /health` returns `{"status":"ok"}`.
 - [ ] New routes are registered with a method prefix (`GET /path`).
+- [ ] `pnpm modularity` passes and no domain logic leaked into `cmd` or `platform`.
 
 ## Next step
 

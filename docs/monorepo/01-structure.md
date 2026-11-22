@@ -36,28 +36,46 @@ rose/
 │   └── commit-msg          commitlint
 ├── pnpm-lock.yaml          single lockfile, single source of truth
 ├── apiRose/                Go module `rose/apiRose`
-│   ├── cmd/server/         main entrypoint
-│   ├── internal/           private Go packages (handlers, domain)
+│   ├── cmd/server/         main entrypoint and wiring
+│   ├── internal/<domain>/  private domain packages (health, ...)
+│   ├── internal/platform/  reserved config/logging/middleware/database/observability
 │   ├── go.mod
 │   └── package.json        task wrapper -> go run/build/vet/test/gocyclo
 ├── webRose/                Next.js app
-│   ├── src/app/            App Router routes
+│   ├── src/app/            App Router routes and composition root
+│   ├── src/features/       business capabilities (app-local modules)
+│   ├── src/shared/         reusable app code (ui/lib/hooks/types/config)
 │   ├── src/__tests__/      Vitest tests
 │   ├── public/
 │   ├── next.config.ts
 │   ├── vitest.config.mts   jsdom + `@` alias
 │   └── tsconfig.json       extends ../tsconfig.base.json
-└── mobileRose/             Expo app
-    ├── src/app/            expo-router file-based routes
-    ├── src/components/     UI components
-    ├── src/hooks/, src/constants/
-    ├── src/__tests__/      Jest + React Native Testing Library tests
-    ├── test/style-mock.js  CSS stub for Jest
-    ├── scripts/start-expo.mjs  agent-friendly Expo Go wrapper
-    ├── assets/
-    ├── app.json
-    └── tsconfig.json       extends expo/tsconfig.base + ../tsconfig.base.json
+├── mobileRose/             Expo app
+│   ├── src/app/            expo-router file-based routes
+│   ├── src/features/       business capabilities (app-local modules)
+│   ├── src/shared/ui/      all reusable primitives + starter shell components
+│   ├── src/shared/theme/   theme tokens + color-scheme hooks
+│   ├── src/global.css      global styles
+│   ├── test/style-mock.js  CSS stub for Jest
+│   ├── scripts/start-expo.mjs  agent-friendly Expo Go wrapper
+│   ├── assets/
+│   ├── app.json
+│   └── tsconfig.json       extends expo/tsconfig.base + ../tsconfig.base.json
+└── packages/               real workspace packages shared by 2+ apps (reserved)
 ```
+
+## Modular by feature
+
+Apps are modular monoliths. Business code lives in `src/features/<feature>` and reusable app code in
+`src/shared/<area>`; Go uses `cmd/<binary>`, `internal/<domain>`, and `internal/platform`. Root
+`packages/*` is only for real workspace packages shared by two or more apps. App-local modules are not
+packages: they have no `package.json` and are never resolved by pnpm.
+
+The dependency direction is `app -> features -> shared`; `app -> shared` is allowed, `shared` imports
+neither, and features never import each other. Run `pnpm modularity` to check it.
+
+The full standard, including the promotion ladder, decision matrix, and enforcement, is
+[09-modularization.md](./09-modularization.md).
 
 ## Why the Go API has a `package.json`
 
@@ -107,27 +125,37 @@ Once you add `packages/shared`, consumers will build after it automatically.
 
 ## What lives where
 
-| Kind of code           | Location                                       |
-| ---------------------- | ---------------------------------------------- |
-| Go HTTP handlers       | `apiRose/internal/<domain>/`                   |
-| Go entrypoint / wiring | `apiRose/cmd/server/main.go`                   |
-| Web pages and layouts  | `webRose/src/app/`                             |
-| Web shared UI          | `webRose/src/components/` (create when needed) |
-| Web tests              | `webRose/src/__tests__/`                       |
-| Mobile screens         | `mobileRose/src/app/` (file name = route)      |
-| Mobile shared UI       | `mobileRose/src/components/`                   |
-| Mobile tests           | `mobileRose/src/__tests__/`                    |
-| Cross-project TS types | `packages/*` (reserved, see below)             |
+| Kind of code               | Location                                                  |
+| -------------------------- | --------------------------------------------------------- |
+| Go domain / handlers       | `apiRose/internal/<domain>/`                              |
+| Go infrastructure          | `apiRose/internal/platform/` (reserved)                   |
+| Go entrypoint / wiring     | `apiRose/cmd/server/main.go`                              |
+| Web routes and layouts     | `webRose/src/app/`                                        |
+| Web business capability    | `webRose/src/features/<feature>/`                         |
+| Web reusable app code      | `webRose/src/shared/<area>/`                              |
+| Web app-level tests        | `webRose/src/__tests__/`                                  |
+| Mobile screens             | `mobileRose/src/app/` (file name = route)                 |
+| Mobile business capability | `mobileRose/src/features/<feature>/`                      |
+| Mobile reusable app code   | `mobileRose/src/shared/<area>/`                           |
+| Mobile shared UI / shell   | `mobileRose/src/shared/ui/`                               |
+| Cross-app tokens/contracts | `packages/*` (real packages with 2+ consumers, see below) |
+| Cross-app pure logic       | `packages/shared` (only after promotion criteria are met) |
 
-## Shared code (`packages/*`)
+## Root packages (`packages/*`)
 
-The glob is already in `pnpm-workspace.yaml`; the folder does not exist yet on purpose. When you create
-`packages/shared`, two things matter:
+The glob is in `pnpm-workspace.yaml`, and `packages/README.md` documents the rule. A root package is
+created only when two or more apps consume the same tokens, API contracts, or pure logic. It needs a
+stable public API and tests. Never put cross-platform UI in a root package, and never create
+`packages/` inside an app.
+
+When a real package exists, two mechanics matter:
 
 1. **Next.js** does not transpile workspace TypeScript sources by default. Add
-   `transpilePackages: ['@rose/shared']` to `webRose/next.config.ts`.
+   `transpilePackages: ['@rose/<name>']` to `webRose/next.config.ts`.
 2. **Expo** resolves workspace packages through Metro automatically (SDK 52+), but keep the package
    dependency exact (`workspace:*`) so autolinking stays consistent.
+
+The promotion ladder and demotion rule are in [09-modularization.md](./09-modularization.md).
 
 ## Generated files
 
@@ -150,8 +178,10 @@ actual type source is `expo/types`, configured in `mobileRose/tsconfig.json`. Do
 
 - [ ] You can explain why `apiRose/package.json` exists.
 - [ ] You know the root is the only place where `pnpm install` runs.
-- [ ] You know `packages/*` is reserved, not active.
+- [ ] You know app code goes in `features`/`shared`, not new technical layers.
+- [ ] You know `packages/*` is reserved for real packages with two or more consumers.
 - [ ] You know `pnpm dev` is foreground and `pnpm dev:start` is the background/agent path.
+- [ ] You know `pnpm modularity` checks the boundaries.
 
 ## Next step
 

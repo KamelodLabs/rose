@@ -6,7 +6,7 @@ import {
   isForbiddenLockfile,
   isMarkdown,
   markdownPlacementIssue,
-  parseArgs,
+  parseCli,
   readJson,
   readText,
   root,
@@ -18,17 +18,7 @@ const usage = `Usage: node docs/scripts/docs-check.mjs [--json]
 Checks Markdown placement and links, the docs index, the single root AGENTS.md, the lockfile policy,
 test placement, and the docs/scripts registry.`;
 
-let parsed;
-try {
-  parsed = parseArgs(process.argv.slice(2), { flags: ['help', 'json'] });
-} catch (error) {
-  process.stderr.write(`${error.message}\n\n${usage}\n`);
-  process.exit(1);
-}
-if (parsed.flags.help) {
-  process.stdout.write(`${usage}\n`);
-  process.exit();
-}
+const parsed = parseCli(usage);
 
 const issues = [];
 const add = (type, file, detail, line = 1) => issues.push({ type, file, line, detail });

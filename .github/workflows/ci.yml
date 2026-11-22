@@ -71,6 +71,9 @@ jobs:
       - name: Quality gates
         run: pnpm quality
 
+      - name: Modularity boundaries
+        run: pnpm modularity
+
       - name: Docs and placement
         run: node docs/scripts/docs-check.mjs
 

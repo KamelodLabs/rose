@@ -60,21 +60,28 @@ pnpm docs:check          # links, placement, AGENTS, lockfile and tests
 | `docs/scripts/`      | Deterministic dev utilities; see its `README.md`          |
 | `.github/workflows/` | CI (`js`, `go`) and image builds                          |
 
+## Modularization (MUST)
+
+Read `docs/monorepo/09-modularization.md` before structural work; it is normative.
+
+- Apps are modular monoliths: business code in `src/features/<feature>`, reusable app code in `src/shared/<area>`; Go uses `cmd/<binary>` + `internal/<domain>` + `internal/platform`.
+- Direction: `app -> features -> shared`; `app -> shared` is allowed. `shared` MUST NOT import `features` or `app`; a feature MUST NOT import another feature.
+- Import a feature only through its public `index.ts`/`index.tsx`; no deep imports. Use `@/shared/*` across modules and relative imports inside a module.
+- An app-local module is not a package: never add `package.json` or `packages/` inside an app. Root `packages/*` is only for code used by 2+ apps; never share UI across web and mobile.
+- Do not create technical-layer folders under `src` (`components/`, `hooks/`, `constants/`); reusable code goes in `src/shared/<area>`, product code in `src/features/<feature>`.
+- Run `pnpm modularity` (or `node docs/scripts/modularity.mjs --json`) after structural changes; `pnpm verify` must pass.
+- Exceptions require updating `docs/monorepo/09-modularization.md` and this file first. If code and doc disagree, the doc wins.
+
 ## Dev services and state
 
 `pnpm dev:start` starts API, web and mobile detached. It writes `.dev/services.json` with each
 service's `pid`, `port`, `url`, `health`, `log` and `status`, plus logs in `.dev/logs/`.
 
-- **Never hardcode ports.** Web starts at 3000, API at 8080, mobile at 8081, but each picks the next
-  free port. Read the JSON.
-- Mobile also writes `mobileRose/.expo/rose-dev.json` (`expoGoUrl`, `host`, `port`, `qrPath`, `status`)
-  and `mobileRose/.expo/expo-go-qr.png`.
-- **Agents must relay `expoGoUrl`.** The human usually cannot see the terminal or QR. They can open the
-  QR PNG or use Expo Go -> "Enter URL manually".
-- Expo Go: same Wi-Fi -> `start`; different network -> `start:tunnel` (slower); Android emulator/USB ->
-  `start:localhost` (Expo runs `adb reverse`). Expo Go must match SDK 58.
-- `pnpm dev` is foreground; use `pnpm dev:start` when an agent must keep working. Stop with
-  `pnpm dev:stop`, not manual `taskkill`.
+- **Never hardcode ports.** Web starts at 3000, API at 8080, mobile at 8081, but each picks the next free port. Read the JSON.
+- Mobile also writes `mobileRose/.expo/rose-dev.json` (`expoGoUrl`, `host`, `port`, `qrPath`, `status`) and `mobileRose/.expo/expo-go-qr.png`.
+- **Agents must relay `expoGoUrl`.** The human usually cannot see the terminal or QR. They can open the QR PNG or use Expo Go -> "Enter URL manually".
+- Expo Go: same Wi-Fi -> `start`; different network -> `start:tunnel` (slower); Android emulator/USB -> `start:localhost` (Expo runs `adb reverse`). Expo Go must match SDK 58.
+- `pnpm dev` is foreground; use `pnpm dev:start` when an agent must keep working. Stop with `pnpm dev:stop`, not manual `taskkill`.
 
 ## Testing
 
@@ -86,8 +93,7 @@ service's `pid`, `port`, `url`, `health`, `log` and `status`, plus logs in `.dev
 
 ## Quality and generated files
 
-- ESLint: `complexity 10`, `max-depth 4`, `max-params 4`, `max-lines-per-function 80 (.ts) / 150
-(.tsx)`, `no-warning-comments`; tests are exempt from complexity and function length.
+- ESLint: `complexity 10`, `max-depth 4`, `max-params 4`, `max-lines-per-function 80 (.ts) / 150 (.tsx)`, `no-warning-comments`; tests are exempt from complexity and function length.
 - Go: `gocyclo` fails above complexity 10 (`pnpm --filter @rose/apiRose lint:complexity`).
 - knip fails on any unused file/dependency; jscpd fails above 7% duplication.
 - Markdown lives under `docs/` or is a README; exactly one root `AGENTS.md`; no `CLAUDE.md`.
@@ -99,21 +105,17 @@ service's `pid`, `port`, `url`, `health`, `log` and `status`, plus logs in `.dev
 
 ## Git and pull requests
 
-- Branch from `dev`: `feat/*`, `fix/*`, `chore/*`. Commit messages use conventional commits
-  (`feat`, `fix`, `docs`, `style`, `refactor`, `perf`, `test`, `build`, `ci`, `chore`, `revert`).
+- Branch from `dev`: `feat/*`, `fix/*`, `chore/*`. Commit messages use conventional commits (`feat`, `fix`, `docs`, `style`, `refactor`, `perf`, `test`, `build`, `ci`, `chore`, `revert`).
 - Hooks: `pre-commit` runs Prettier on staged files; `commit-msg` runs commitlint. `--no-verify` is a
   local escape hatch, not a workflow.
 - PRs target `dev` and are squash-merged. Before opening: `pnpm verify`.
-- Promotions `dev -> staging -> main` go through `node docs/scripts/promote.mjs <name> --yes` (or the
-  documented `promote/<name>` hybrid branch). **Never** push or merge directly to `dev`, `staging` or
-  `main`.
+- Promotions `dev -> staging -> main` go through `node docs/scripts/promote.mjs <name> --yes` (or the documented `promote/<name>` hybrid branch). **Never** push or merge directly to `dev`, `staging` or `main`.
 - **Never** force-push, rewrite history, or bypass branch protection. Check with
   `gh pr checks <n> --watch --fail-fast`.
 
 ## Boundaries
 
-**Always:** read `.dev/services.json` / `.expo/rose-dev.json` for state; run `pnpm verify` before a PR;
-update docs and tests with behavior changes; keep changes inside the request.
+**Always:** read `.dev/services.json` / `.expo/rose-dev.json` for state; run `pnpm verify` before a PR; update docs and tests with behavior changes; keep changes inside the request.
 
 **Ask first:** adding dependencies; changing the database schema or public API; deleting data or
 rewriting git history; touching deployment, secrets or production; broad refactors.
