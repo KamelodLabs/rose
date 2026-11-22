@@ -21,6 +21,7 @@ requested.
 | `deps-check`  | `node docs/scripts/deps-check.mjs`                      | Read-only outdated pnpm, Expo and Go dependencies                          |
 | `release`     | `node docs/scripts/release.mjs <vX.Y.Z> [--yes]`        | Validates main/CI/tag, then creates and pushes an annotated tag            |
 | `docs-check`  | `node docs/scripts/docs-check.mjs`                      | Links, Markdown placement, AGENTS.md, lockfile, tests, script registry     |
+| `modularity`  | `node docs/scripts/modularity.mjs [--json]`             | Src areas, feature/shared shape, module packages, Go platform, imports     |
 | `promote`     | `node docs/scripts/promote.mjs <name>`                  | Plans (dry run) or executes the dev -> staging -> main promotion           |
 
 ## Examples
@@ -31,6 +32,7 @@ pnpm repo:status
 pnpm review:prep
 pnpm affected
 pnpm guard
+pnpm modularity
 pnpm docs:check
 
 # Background services with a registry and per-service logs
@@ -97,6 +99,7 @@ readiness comes from `mobileRose/.expo/rose-dev.json` and its `expoGoUrl` uses t
 | `doctor`     | `{ ok, checkedAt, summary: { ok, warn, fail }, checks: [{ name, status, detail }] }` |
 | `clean`      | `{ dryRun, refused, targets, totalBytes }` or `{ dryRun: false, deleted, failed }`   |
 | `docs-check` | `{ ok, files, issues: [{ type, file, line, detail }] }`                              |
+| `modularity` | `{ ok, violations: [{ file, line, rule, message }] }`                                |
 | `promote`    | Dry run: `{ dryRun: true, name, branch, merge, prs, commits, steps }`                |
 
 `dev.mjs logs` also accepts `--json` and returns the last lines of each log file.
@@ -104,9 +107,17 @@ readiness comes from `mobileRose/.expo/rose-dev.json` and its `expoGoUrl` uses t
 ## Structure gates
 
 `pnpm docs:check` enforces Markdown placement, a single root `AGENTS.md`, the docs index, one
-`pnpm-lock.yaml`, test placement and the `docs/scripts` registry. It runs inside `pnpm verify` and in
-CI. `.husky/pre-commit` also runs `guard --staged`, so misplaced Markdown, secrets, generated files
+`pnpm-lock.yaml`, test placement and the `docs/scripts` registry. `pnpm modularity` enforces the
+feature/shared module shape and import direction in web and mobile, plus the Go platform direction.
+Both run inside `pnpm verify` and in CI. `.husky/pre-commit` also runs `guard --staged`, so misplaced Markdown, secrets, generated files
 and forbidden lockfiles fail before the commit is created. CI runs the same guard on the PR diff.
+
+The modularity scanner reads static imports, re-exports, side-effect imports, dynamic imports, and
+`require()` calls. It skips generated/build directories. It rejects module-level `package.json` files,
+`packages/` and unexpected technical-layer directories at the app `src` root, missing feature
+`index.ts` files, cross-feature imports, deep feature imports from `app`, relative imports that escape
+their module or app, and domain imports from `apiRose/internal/platform`. The rule set is defined in
+`docs/monorepo/09-modularization.md`.
 
 ## Safety
 
